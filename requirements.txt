@@ -3,3 +3,4 @@ uvicorn
 google-genai
 pillow
 edge-tts
+python-multipart
