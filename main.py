@@ -16,7 +16,7 @@ app.state.utolso_hang = None
 @app.get("/", response_class=HTMLResponse)
 async def fooldal():
     # ITT A KÉPED LINKJE
-    hatter_kep = "https://i.ibb.co/k5JqS32/3932.jpg" 
+    hatter_kep = "https://i.ibb.co/sd6f0dxh/Gemini-Generated-Image-cqbhi1cqbhi1cqbh.png" 
     
     return f"""
     <!DOCTYPE html>
