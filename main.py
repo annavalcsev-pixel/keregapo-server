@@ -15,7 +15,7 @@ app.state.utolso_hang = None
 
 @app.get("/", response_class=HTMLResponse)
 async def fooldal():
-    # ITT A KÉPED LINKJE
+    # A képed közvetlen linkje
     hatter_kep = "https://i.ibb.co/sd6f0dxh/Gemini-Generated-Image-cqbhi1cqbhi1cqbh.png" 
     
     return f"""
@@ -24,10 +24,30 @@ async def fooldal():
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>
-            body {{ margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background: #2c3e50; }}
-            .frame {{ position: relative; width: 100vw; height: 100vh; background: url('{hatter_kep}') center/contain no-repeat; }}
+            body {{ 
+                margin: 0; 
+                padding: 0; 
+                height: 100vh; 
+                background-color: #5d4037; /* Erdei barna keret */
+            }}
+            .frame {{ 
+                position: relative; 
+                width: 100vw; 
+                height: 100vh; 
+                background-image: url('{hatter_kep}');
+                background-size: cover;          /* Kitölti a teljes képernyőt */
+                background-position: center;     /* Középre igazítja */
+                background-repeat: no-repeat; 
+            }}
             /* A láthatatlan gomb a nagyító közepére */
-            .kattinthato {{ position: absolute; top: 40%; left: 25%; width: 50%; height: 30%; cursor: pointer; }}
+            .kattinthato {{ 
+                position: absolute; 
+                top: 40%; 
+                left: 30%; 
+                width: 40%; 
+                height: 25%; 
+                cursor: pointer; 
+            }}
             #file-input {{ display: none; }}
         </style>
     </head>
@@ -40,7 +60,8 @@ async def fooldal():
             async function upload(input) {{
                 const formData = new FormData();
                 formData.append('file', input.files[0]);
-                alert("Kéregapó gondolkodik...");
+                // Apró vizuális visszajelzés kattintás után
+                alert("Kéregapó épp figyel...");
                 const res = await fetch('/api/keregapo', {{ method: 'POST', body: formData }});
                 if(res.ok) {{
                     const audio = new Audio('/api/keregapo/hang.mp3');
