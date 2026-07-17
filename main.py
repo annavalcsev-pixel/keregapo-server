@@ -32,23 +32,33 @@ async def fooldal():
         <link rel="manifest" href="manifest.json">
         <style>
             body {{ margin: 0; padding: 0; height: 100vh; background-color: #5d4037; overflow: hidden; }}
-            .frame {{ position: relative; width: 100vw; height: 100vh; background-image: url('{hatter_kep}'); background-size: cover; background-position: center; }}
+            .frame {{ 
+                position: relative; width: 100vw; height: 100vh; 
+                background-image: url('{hatter_kep}'); 
+                background-size: cover; background-position: center; 
+            }}
+            /* A nagyító területe (Fotózás) */
+            .nagyito {{ 
+                position: absolute; top: 22%; left: 30%; width: 40%; height: 28%; 
+                cursor: pointer; background: transparent; 
+            }}
+            /* A könyv területe (Feltöltés) */
+            .konyv {{ 
+                position: absolute; top: 60%; left: 20%; width: 60%; height: 25%; 
+                cursor: pointer; background: transparent; 
+            }}
             #loading {{ display: none; position: absolute; top: 40%; left: 40%; width: 20%; z-index: 100; }}
-            .juhar {{ animation: spin 1s linear infinite; width: 100%; }}
+            .juhar {{ animation: spin 2s linear infinite; width: 100%; filter: drop-shadow(0 0 5px white); }}
             @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
-            .gomb-container {{ position: absolute; bottom: 5%; width: 100%; display: flex; justify-content: space-around; }}
-            .gomb {{ padding: 15px 25px; border-radius: 20px; border: none; background: #8d6e63; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }}
         </style>
     </head>
     <body>
         <div class="frame">
-            <div class="gomb-container">
-                <button class="gomb" onclick="document.getElementById('camera-input').click()">Fotózás</button>
-                <button class="gomb" onclick="document.getElementById('file-input').click()">Feltöltés</button>
-            </div>
+            <div class="nagyito" onclick="document.getElementById('camera-input').click()"></div>
+            <div class="konyv" onclick="document.getElementById('file-input').click()"></div>
         </div>
         
-        <div id="loading"><img src="https://cdn-icons-png.flaticon.com/512/867/867664.png" class="juhar"></div>
+        <div id="loading"><img src="https://cdn-icons-png.flaticon.com/512/3233/3233816.png" class="juhar"></div>
         
         <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="upload(this)" style="display:none">
         <input type="file" id="file-input" accept="image/*" onchange="upload(this)" style="display:none">
