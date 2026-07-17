@@ -29,22 +29,30 @@ async def fooldal():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <link rel="manifest" href="manifest.json">
         <style>
-            body {{ margin: 0; padding: 0; height: 100vh; background-color: #5d4037; }}
+            body {{ margin: 0; padding: 0; height: 100vh; background-color: #5d4037; overflow: hidden; }}
             .frame {{ position: relative; width: 100vw; height: 100vh; background-image: url('{hatter_kep}'); background-size: cover; background-position: center; }}
-            .kattinthato {{ position: absolute; top: 25%; left: 36%; width: 10%; height: 18%; cursor: pointer; }}
             #loading {{ display: none; position: absolute; top: 40%; left: 40%; width: 20%; z-index: 100; }}
             .juhar {{ animation: spin 1s linear infinite; width: 100%; }}
             @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
-            #file-input {{ display: none; }}
+            .gomb-container {{ position: absolute; bottom: 5%; width: 100%; display: flex; justify-content: space-around; }}
+            .gomb {{ padding: 15px 25px; border-radius: 20px; border: none; background: #8d6e63; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }}
         </style>
     </head>
     <body>
         <div class="frame">
-            <div class="kattinthato" onclick="document.getElementById('file-input').click()"></div>
+            <div class="gomb-container">
+                <button class="gomb" onclick="document.getElementById('camera-input').click()">Fotózás</button>
+                <button class="gomb" onclick="document.getElementById('file-input').click()">Feltöltés</button>
+            </div>
         </div>
+        
         <div id="loading"><img src="https://cdn-icons-png.flaticon.com/512/867/867664.png" class="juhar"></div>
-        <input type="file" id="file-input" accept="image/*" onchange="upload(this)">
+        
+        <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="upload(this)" style="display:none">
+        <input type="file" id="file-input" accept="image/*" onchange="upload(this)" style="display:none">
+
         <script>
             async function upload(input) {{
                 if (!input.files || input.files.length === 0) return;
