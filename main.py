@@ -47,8 +47,14 @@ async def fooldal():
                 position: absolute; top: 60%; left: 20%; width: 60%; height: 25%; 
                 cursor: pointer; background: transparent; 
             }}
-            #loading {{ display: none; position: absolute; top: 40%; left: 40%; width: 20%; z-index: 100; }}
-            .juhar {{ animation: spin 2s linear infinite; width: 100%; filter: drop-shadow(0 0 5px white); }}
+            #loading {{ 
+                display: none; position: absolute; top: 40%; left: 40%; 
+                width: 20%; height: 20%; z-index: 100; 
+            }}
+            .juhar {{ 
+                width: 100%; height: 100%; animation: spin 1s linear infinite; 
+                transform-origin: center; filter: drop-shadow(0 0 5px white); 
+            }}
             @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
         </style>
     </head>
@@ -58,7 +64,11 @@ async def fooldal():
             <div class="konyv" onclick="document.getElementById('file-input').click()"></div>
         </div>
         
-        <div id="loading"><img src="https://cdn-icons-png.flaticon.com/512/3233/3233816.png" class="juhar"></div>
+        <div id="loading">
+            <svg class="juhar" viewBox="0 0 100 100">
+                <path fill="#e67e22" d="M50 10 Q 55 40 80 50 Q 55 60 50 90 Q 45 60 20 50 Q 45 40 50 10 Z"/>
+            </svg>
+        </div>
         
         <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="upload(this)" style="display:none">
         <input type="file" id="file-input" accept="image/*" onchange="upload(this)" style="display:none">
