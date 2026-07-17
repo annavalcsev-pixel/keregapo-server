@@ -93,10 +93,10 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
     
-    # Hangbeállítások: Tamás hangja, 10%-kal lassabb tempó, 5Hz-cel mélyebb hangszín
+    # Hangbeállítások: György hangja, 10%-kal lassabb tempó, 5Hz-cel mélyebb hangszín
     communicate = edge_tts.Communicate(
         response.text, 
-        "hu-HU-TamasNeural",
+        "hu-HU-GyorgyNeural",
         rate="-10%", 
         pitch="-5Hz"
     )
