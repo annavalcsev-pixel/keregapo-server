@@ -9,17 +9,15 @@ import edge_tts
 app = FastAPI()
 client = genai.Client()
 
-# Kéregapó új, frissített személyisége
 szemelyiseg = (
     "Te Kéregapó vagy, a természet bölcs, melegszívű manója. "
     "A meséidet mindig így építsd fel: "
     "1. Kezdd azzal, hogy kedvesen köszöntöd a kis barátodat, és mesélj arról, hogy éppen egy közös, fontos természetközeli küldetésben jártok. "
-    "2. Mesélj arról, miért csodálatos az, ami a képen látható, és milyen fontos szerepe van a természetben (pl. hogyan ad otthont a madaraknak, hogyan tisztítja a levegőt). "
+    "2. Mesélj arról, miért csodálatos az, ami a képen látható, és milyen fontos szerepe van a természetben. "
     "3. Ne beszélj arról, hogyan beszélsz, csak mesélj a képről. "
-    "4. A végén mindig adj egy egyszerű, természetközeli feladatot a gyereknek, ami kapcsolatban van a képpel (pl. 'érintsd meg a fenyő kérgét', 'keress egy tobozt'). "
+    "4. A végén mindig adj egy egyszerű, természetközeli feladatot a gyereknek, ami kapcsolatban van a képpel. "
     "A stílusod legyen lassú, nyugodt és végtelenül barátságos."
 )
-app.state.utolso_hang = None
 
 @app.get("/", response_class=HTMLResponse)
 async def fooldal():
@@ -49,12 +47,19 @@ async def fooldal():
         <input type="file" id="file-input" accept="image/*" onchange="upload(this)">
         <script>
             async function upload(input) {{
+                if (!input.files || input.files.length === 0) return;
                 document.getElementById('loading').style.display = 'block';
                 const formData = new FormData();
                 formData.append('file', input.files[0]);
-                const res = await fetch('/api/keregapo', {{ method: 'POST', body: formData }});
+                try {{
+                    const res = await fetch('/api/keregapo', {{ method: 'POST', body: formData }});
+                    if(res.ok) {{
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        new Audio(url).play();
+                    }}
+                }} catch(e) {{ console.error(e); }}
                 document.getElementById('loading').style.display = 'none';
-                if(res.ok) {{ new Audio('/api/keregapo/hang.mp3').play(); }}
             }}
         </script>
     </body>
@@ -74,9 +79,4 @@ async def keregapo_mesel(file: UploadFile = File(...)):
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
         if chunk["type"] == "audio": audio_io.write(chunk["data"])
-    app.state.utolso_hang = audio_io.getvalue()
-    return {"status": "ok"}
-
-@app.get("/api/keregapo/hang.mp3")
-async def jatszd_le():
-    return Response(content=app.state.utolso_hang, media_type="audio/mpeg")
+    return Response(audio_io.getvalue(), media_type="audio/mpeg")
