@@ -18,7 +18,7 @@ szemelyisegek = {
 
 @app.get("/", response_class=HTMLResponse)
 async def fooldal():
-    hatter_kep = "https://i.ibb.co/sd6f0dxh/Gemini-Generated-Image-cqbhi1cqbhi1cqbh.png" 
+    hatter_kep = "https://i.ibb.co/TMvSZm2y/creen1.png" 
     
     return f"""
     <!DOCTYPE html>
@@ -84,8 +84,8 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     
     instrukcio = szemelyisegek.get(korosztaly, szemelyisegek["felfedezok"])
     
-    # Kérjük a modellt, hogy természetesebb ritmusú, tagolt szöveget írjon
-    prompt = "Mesélj a képről! Használj tagolt, nyugodt mondatokat, mintha egy bölcs öreg manó mesélne. Kerüld a gyors felsorolásokat."
+    # A szövegtervezés a jobb hangsúlyokért:
+    prompt = "Mesélj a képről! Használj sok vesszőt, pontosvesszőt és gondolatjelet a mondatokban, hogy a hangszintetizátor természetes szüneteket tartson. A mondatok legyenek változatosak és dallamosak."
     
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
@@ -93,10 +93,9 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
     
-    # Hangbeállítások: György hangja, 10%-kal lassabb tempó, 5Hz-cel mélyebb hangszín
     communicate = edge_tts.Communicate(
         response.text, 
-        "hu-HU-GyorgyNeural",
+        "hu-HU-TamasNeural",
         rate="-10%", 
         pitch="-5Hz"
     )
