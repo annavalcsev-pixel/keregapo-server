@@ -82,13 +82,23 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     contents = await file.read()
     raw_image = Image.open(io.BytesIO(contents)).convert("RGB")
     
-    # Kiválasztjuk a megfelelő utasítást
     instrukcio = szemelyisegek.get(korosztaly, szemelyisegek["felfedezok"])
+    
+    # Kérjük a modellt, hogy természetesebb ritmusú, tagolt szöveget írjon
+    prompt = "Mesélj a képről! Használj tagolt, nyugodt mondatokat, mintha egy öreg manó mesélne. Kerüld a gyors felsorolásokat."
     
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
-        contents=[raw_image, "Mesélj a képről!"], 
+        contents=[raw_image, prompt], 
         config=types.GenerateContentConfig(system_instruction=instrukcio)
+    )
+    
+    # Itt állítjuk be a hangot: picit lassabb (-10%), mélyebb (-5Hz) hangzás
+    communicate = edge_tts.Communicate(
+        response.text, 
+        "hu-HU-TamasNeural",
+        rate="-10%", 
+        pitch="-5Hz"
     )
     communicate = edge_tts.Communicate(response.text, "hu-HU-TamasNeural")
     audio_io = io.BytesIO()
