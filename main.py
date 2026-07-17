@@ -84,8 +84,8 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     
     instrukcio = szemelyisegek.get(korosztaly, szemelyisegek["felfedezok"])
     
-    # A szövegtervezés a jobb hangsúlyokért:
-    prompt = "Mesélj a képről! Használj sok vesszőt, pontosvesszőt és gondolatjelet a mondatokban, hogy a hangszintetizátor természetes szüneteket tartson. A mondatok legyenek változatosak és dallamosak."
+    # Kérjük a modellt, hogy természetesebb, mondatközi szüneteket is tartalmazó szöveget írjon
+    prompt = "Mesélj a képről! Használj sok vesszőt, pontosvesszőt és gondolatjelet. A szöveg legyen tele érzelmekkel, hogy Kéregapó igazán életre keljen."
     
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
@@ -93,9 +93,10 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
     
+    # György "Neural" hangja, lassítva és mélyítve a még "apósabb" hatásért
     communicate = edge_tts.Communicate(
         response.text, 
-        "hu-HU-TamasNeural",
+        "hu-HU-GyorgyNeural",
         rate="-10%", 
         pitch="-5Hz"
     )
