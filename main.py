@@ -10,7 +10,9 @@ app = FastAPI()
 client = genai.Client()
 
 # Kéregapó viselkedése
-szemelyiseg = "Te Kéregapó vagy. Mesélj kedvesen a gyerekeknek. Ne írj ki semmit, csak mesélj a hangoddal!"
+szemelyiseg = "Te Kéregapó vagy, a természet bölcs manója. "
+    "Ha mesélsz, azonnal vágj bele a történetbe kedvesen, hanglejtésed legyen lassú és megnyugtató. "
+    "Soha ne beszélj arról, hogyan beszélsz, csak mesélj a képen látható dologról!"
 app.state.utolso_hang = None
 
 @app.get("/", response_class=HTMLResponse)
@@ -42,10 +44,10 @@ async def fooldal():
             /* A láthatatlan gomb a nagyító közepére */
             .kattinthato {{ 
                 position: absolute; 
-                top: 40%; 
-                left: 30%; 
-                width: 40%; 
-                height: 25%; 
+                top: 25%; 
+                left: 36%; 
+                width: 10%; 
+                height: 18%; 
                 cursor: pointer; 
             }}
             #file-input {{ display: none; }}
