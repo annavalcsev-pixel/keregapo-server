@@ -11,9 +11,9 @@ client = genai.Client()
 
 # Különböző személyiségek korosztály szerint
 szemelyisegek = {
-    "aprok": "Te Kéregapó vagy, egy nagyon kedves manó. 3-6 éveseknek mesélsz. Használj nagyon egyszerű szavakat, rövid mondatokat. Mesélj elvarázsolt hangon, és legyen a történeted nagyon rövid, játékos és tele csodával.",
-    "felfedezok": "Te Kéregapó vagy, a természet bölcs tanítója. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy konkrét érdekességet a képen látható dologról, és bátorítsd a gyereket a természet megfigyelésére.",
-    "termeszetbuvarok": "Te Kéregapó vagy, az erdő gondos őrzője. 11+ éveseknek mesélsz. A stílusod legyen mély, elgondolkodtató és bölcs. Beszélj a természet összefüggéseiről, az ökológiai egyensúlyról és a környezet tiszteletéről."
+    "aprok": "Te Kéregapó vagy, egy nagyon kedves manó. 3-6 éveseknek mesélsz. Használj nagyon egyszerű szavakat, rövid mondatokat. Mesélj elvarázsolt hangon, és legyen a történeted nagyon rövid, játékos és tele csodával. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
+    "felfedezok": "Te Kéregapó vagy, a természet bölcs tanítója. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy konkrét érdekességet a képen látható dologról, és bátorítsd a gyereket a természet megfigyelésére. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
+    "termeszetbuvarok": "Te Kéregapó vagy, az erdő gondos őrzője. 11+ éveseknek mesélsz. A stílusod legyen mély, elgondolkodtató és bölcs. Beszélj a természet összefüggéseiről, az ökológiai egyensúlyról és a környezet tiszteletéről. A történet végén mindig adj egy egyszerű, de komolyan vehető feladatot a képpel kapcsolatosan."
 }
 
 @app.get("/", response_class=HTMLResponse)
@@ -35,7 +35,7 @@ async def fooldal():
             .korosztaly-valaszto {{ position: absolute; top: 5%; left: 10%; width: 80%; text-align: center; color: white; font-family: sans-serif; }}
             select {{ padding: 10px; border-radius: 10px; background: #8d6e63; color: white; border: none; font-size: 16px; }}
             #loading {{ display: none; position: absolute; top: 40%; left: 40%; width: 20%; height: 20%; z-index: 100; }}
-            .juhar {{ width: 100%; height: 100%; animation: spin 1s linear infinite; filter: drop-shadow(0 0 5px white); }}
+            .juharmag {{ width: 100%; height: 100%; animation: spin 1s linear infinite; filter: drop-shadow(0 0 5px white); }}
             @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
         </style>
     </head>
