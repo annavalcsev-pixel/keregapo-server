@@ -30,11 +30,13 @@ async def fooldal():
         <style>
             body {{ margin: 0; padding: 0; height: 100vh; background-color: #5d4037; overflow: hidden; }}
             .frame {{ position: relative; width: 100vw; height: 100vh; background-image: url('{hatter_kep}'); background-size: cover; background-position: center; }}
-            .nagyito {{ position: absolute; top: 22%; left: 30%; width: 40%; height: 28%; cursor: pointer; }}
+            /* A nagyító most balra fent */
+            .nagyito {{ position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; cursor: pointer; }}
             .konyv {{ position: absolute; top: 60%; left: 20%; width: 60%; height: 25%; cursor: pointer; }}
             .korosztaly-valaszto {{ position: absolute; top: 5%; left: 10%; width: 80%; text-align: center; color: white; font-family: sans-serif; }}
             select {{ padding: 10px; border-radius: 10px; background: #8d6e63; color: white; border: none; font-size: 16px; }}
-            #loading {{ display: none; position: absolute; top: 40%; left: 40%; width: 20%; height: 20%; z-index: 100; }}
+            /* A juharmag is balra fent, a nagyítóval azonos helyen */
+            #loading {{ display: none; position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; z-index: 100; pointer-events: none; }}
             .juhar {{ width: 100%; height: 100%; animation: spin 1s linear infinite; filter: drop-shadow(0 0 5px white); }}
             @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
         </style>
@@ -84,8 +86,7 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     
     instrukcio = szemelyisegek.get(korosztaly, szemelyisegek["felfedezok"])
     
-    # Kérjük a modellt, hogy természetesebb, mondatközi szüneteket is tartalmazó szöveget írjon
-    prompt = "Mesélj a képről! Használj sok vesszőt, pontosvesszőt és gondolatjelet. A szöveg legyen tele érzelmekkel, hogy Kéregapó igazán életre keljen."
+    prompt = "Mesélj a képről! Írj rövid, tagolt mondatokat, mintha csak mesélnél. Használj gyakran kérdéseket, felkiáltásokat és érzelmi kifejezéseket. Kerüld a hosszú, száraz leírásokat; a szöveg legyen élő, lendületes és melegszívű."
     
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
@@ -93,11 +94,10 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
     
-    # György "Neural" hangja, lassítva és mélyítve a még "apósabb" hatásért
     communicate = edge_tts.Communicate(
         response.text, 
-        "hu-HU-GyorgyNeural",
-        rate="-10%", 
+        "hu-HU-TamasNeural",
+        rate="-5%", 
         pitch="-5Hz"
     )
     
