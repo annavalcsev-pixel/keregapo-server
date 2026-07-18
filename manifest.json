@@ -1,13 +1,15 @@
 {
-  "name": "Kalandozások Kéregapóval",
+  "name": "Kéregapó Meséi",
   "short_name": "Kéregapó",
+  "description": "Kéregapó természetmeséi",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
+  "orientation": "portrait",
   "background_color": "#5d4037",
   "theme_color": "#5d4037",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3069/3069176.png",
+      "src": "https://i.ibb.co/L1V5j5N/icon.png",
       "sizes": "192x192",
       "type": "image/png"
     }
