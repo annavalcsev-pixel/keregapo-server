@@ -9,18 +9,18 @@ import edge_tts
 app = FastAPI()
 client = genai.Client()
 
-# Személyiségek
+# Személyiségek (Moha Anyó stílusban)
 szemelyisegek = {
-    "aprok": "Te Kéregapó vagy, egy nagyon kedves manó. 3-6 éveseknek mesélsz. Használj nagyon egyszerű szavakat, rövid mondatokat. Mesélj elvarázsolt hangon, és legyen a történeted nagyon rövid, játékos és tele csodával. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
-    "felfedezok": "Te Kéregapó vagy, a természet bölcs tanítója. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy konkrét érdekességet a képen látható dologról, és bátorítsd a gyereket a természet megfigyelésére. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
-    "termeszetbuvarok": "Te Kéregapó vagy, az erdő gondos őrzője. 11+ éveseknek mesélsz. A stílusod legyen mély, elgondolkodtató és bölcs. Beszélj a természet összefüggéseiről, az ökológiai egyensúlyról és a környezet tiszteletéről. A történet végén mindig adj egy egyszerű, de komolyan vehető feladatot a képpel kapcsolatosan."
+    "aprok": "Te Moha Anyó vagy, a természet szerető nagymamája. 3-6 éveseknek mesélsz. Használj nagyon egyszerű szavakat, lágy, kedves mondatokat. Mesélj lassabban, meleg hangon, és legyen a történeted nagyon rövid, játékos és tele csodával. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
+    "felfedezok": "Te Moha Anyó vagy, a természet bölcs tanítója. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy konkrét érdekességet a képen látható dologról, és bátorítsd a gyereket a természet megfigyelésére. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
+    "termeszetbuvarok": "Te Moha Anyó vagy, az erdő gondos őrzője. 11+ éveseknek mesélsz. A stílusod legyen mély, elgondolkodtató és bölcs. Beszélj a természet összefüggéseiről, az ökológiai egyensúlyról és a környezet tiszteletéről. A történet végén mindig adj egy egyszerű, de komolyan vehető feladatot a képpel kapcsolatosan."
 }
 
 @app.get("/manifest.json")
 async def get_manifest():
     return JSONResponse({
-        "name": "Kéregapó Meséi",
-        "short_name": "Kéregapó",
+        "name": "Moha Anyó Meséi",
+        "short_name": "Moha Anyó",
         "start_url": "/",
         "display": "fullscreen",
         "orientation": "portrait",
@@ -32,7 +32,7 @@ async def get_manifest():
 @app.get("/service-worker.js")
 async def get_sw():
     content = """
-    const CACHE_NAME = 'keregapo-v1';
+    const CACHE_NAME = 'moha-anyo-v1';
     self.addEventListener('install', (event) => { event.waitUntil(caches.open(CACHE_NAME)); });
     self.addEventListener('fetch', (event) => {
         event.respondWith(caches.match(event.request).then((response) => response || fetch(event.request)));
@@ -55,10 +55,8 @@ async def fooldal():
         <style>
             body {{ margin: 0; background: #2d1b0d; color: #f3e5ab; font-family: sans-serif; overflow: hidden; }}
             .frame {{ width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/TMvSZm2y/creen1.png'); background-size: cover; background-position: center; position: relative; }}
-            /* Gombok a fiók fölött (z-index: 10) */
             .nagyito {{ position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; cursor: pointer; z-index: 10; }}
             .konyv {{ position: absolute; top: 60%; left: 20%; width: 60%; height: 25%; cursor: pointer; z-index: 10; }}
-            /* Fiók (z-index: 5) */
             #fiok {{ position: absolute; bottom: -120px; left: 10%; width: 80%; height: 180px; background: #5d4037; border-radius: 20px 20px 0 0; transition: bottom 0.5s; padding: 20px; box-sizing: border-box; text-align: center; cursor: pointer; z-index: 5; }}
             #fiok.nyitva {{ bottom: 0; }}
             #loading {{ display: none; position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; z-index: 20; pointer-events: none; }}
@@ -71,7 +69,7 @@ async def fooldal():
             <div class="nagyito" onclick="document.getElementById('camera-input').click()"></div>
             <div class="konyv" onclick="document.getElementById('file-input').click()"></div>
             <div id="fiok" onclick="fiokToggle(this)">
-                <p>▼ Korosztály választó ▼</p>
+                <p>▼ Melyik korosztálynak meséljen Moha Anyó? ▼</p>
                 <select id="korosztaly" onclick="event.stopPropagation()">
                     <option value="aprok">Aprókák (3-6 év)</option>
                     <option value="felfedezok">Felfedezők (7-10 év)</option>
@@ -84,8 +82,9 @@ async def fooldal():
         <input type="file" id="file-input" accept="image/*" onchange="upload(this)" style="display:none">
         
         <script>
-            const hangKi = new Audio('https://www.soundjay.com/buttons/sounds/button-10.mp3');
-            const hangBe = new Audio('https://www.soundjay.com/buttons/sounds/button-11.mp3');
+            // Ide illeszd be a te általad választott fiók hangot
+            const hangKi = new Audio('IDE_A_TE_FIÓK_NYITÓ_HANGOD_LINKJE');
+            const hangBe = new Audio('IDE_A_TE_FIÓK_ZÁRÓ_HANGOD_LINKJE');
             const hangKeresgeles = new Audio('https://www.soundjay.com/misc/sounds/paper-crinkling-1.mp3');
 
             function fiokToggle(el) {{
@@ -117,12 +116,14 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     raw_image = Image.open(io.BytesIO(contents)).convert("RGB")
     instrukcio = szemelyisegek.get(korosztaly, szemelyisegek["felfedezok"])
     prompt = "Mesélj a képről! Írj rövid, tagolt mondatokat, mintha csak mesélnél. Használj gyakran kérdéseket, felkiáltásokat és érzelmi kifejezéseket. Kerüld a hosszú, száraz leírásokat; a szöveg legyen élő, lendületes és melegszívű."
+    
+    # Itt váltottunk Noémire
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
         contents=[raw_image, prompt], 
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
-    communicate = edge_tts.Communicate(response.text, "hu-HU-TamasNeural", rate="-5%", pitch="-5Hz")
+    communicate = edge_tts.Communicate(response.text, "hu-HU-NoemiNeural", rate="-10%", pitch="-10Hz")
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
         if chunk["type"] == "audio": audio_io.write(chunk["data"])
