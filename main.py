@@ -24,15 +24,20 @@ async def fooldal():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>
-            body { margin: 0; background: #2d1b0d; overflow: hidden; font-family: sans-serif; }
+            body { margin: 0; background: #2d1b0d; overflow: hidden; }
             .frame { width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/XhH2NxP/Moha-any-2.png'); background-size: cover; background-position: center; position: relative; }
-            .btn { position: absolute; cursor: pointer; z-index: 20; background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; }
-            #nagyito { top: 340px; left: 245px; width: 160px; height: 160px; }
-            #konyv { top: 720px; left: 280px; width: 440px; height: 250px; }
-            #fiok { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; background: #5d4037; color: white; text-align: center; padding-top: 15px; z-index: 5; }
-            #loading { display: none; position: absolute; top: 250px; left: 320px; width: 60px; z-index: 30; }
+            
+            /* Gombok százalékos pozícióval */
+            .btn { position: absolute; cursor: pointer; z-index: 20; background: transparent; }
+            #nagyito { top: 22%; left: 10%; width: 25%; height: 15%; }
+            #konyv { top: 72%; left: 25%; width: 50%; height: 18%; }
+            
+            /* Betöltésjelző a nagyító fölött */
+            #loading { display: none; position: absolute; top: 15%; left: 15%; width: 15%; z-index: 30; }
             .juhar { width: 100%; animation: spin 1s linear infinite; }
             @keyframes spin { 100% { transform: rotate(360deg); } }
+            
+            #fiok { position: absolute; bottom: 0; width: 100%; height: 50px; background: #5d4037; color: white; text-align: center; padding-top: 10px; z-index: 5; }
         </style>
     </head>
     <body>
@@ -74,11 +79,13 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     contents = await file.read()
     raw_image = Image.open(io.BytesIO(contents)).convert("RGB")
     instrukcio = szemelyisegek.get(korosztaly, szemelyisegek["felfedezok"])
+    
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
         contents=[raw_image, "Mesélj a képről."], 
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
+    
     communicate = edge_tts.Communicate(response.text, "hu-HU-TündeNeural")
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
