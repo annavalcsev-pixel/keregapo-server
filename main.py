@@ -9,7 +9,6 @@ import edge_tts
 app = FastAPI()
 client = genai.Client()
 
-# Moha Anyó személyiségek
 szemelyisegek = {
     "aprok": "Te Moha Anyó vagy, a természet szerető nagymamája. 3-6 éveseknek mesélsz. Használj egyszerű szavakat, lágy, kedves mondatokat. Mesélj lassabban, meleg hangon, és legyen a történeted nagyon rövid, játékos és tele csodával. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
     "felfedezok": "Te Moha Anyó vagy, a természet bölcs tanítója. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy-két konkrét érdekességet a képen látható dologról, amit mindenképpen nevezz meg, és bátorítsd a gyereket a természet megfigyelésére. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
@@ -26,18 +25,12 @@ async def fooldal():
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>
             body { margin: 0; background: #2d1b0d; overflow: hidden; font-family: sans-serif; }
-            .frame { 
-                width: 100vw; height: 100vh; 
-                background-image: url('https://i.ibb.co/XhH2NxP/Moha-any-2.png'); 
-                background-size: cover; background-position: center; position: relative; 
-            }
-            .btn { position: absolute; cursor: pointer; z-index: 20; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; }
-            #nagyito { top: 25%; left: 35%; width: 25%; height: 15%; }
-            #konyv { top: 65%; left: 30%; width: 40%; height: 20%; }
-            
-            #fiok { position: absolute; bottom: 0; left: 0; width: 100%; height: 70px; background: #5d4037; color: white; text-align: center; padding-top: 10px; z-index: 5; }
-            
-            #loading { display: none; position: absolute; top: 45%; left: 40%; width: 20%; z-index: 30; }
+            .frame { width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/XhH2NxP/Moha-any-2.png'); background-size: cover; background-position: center; position: relative; }
+            .btn { position: absolute; cursor: pointer; z-index: 20; background: transparent; border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; }
+            #nagyito { top: 340px; left: 245px; width: 160px; height: 160px; }
+            #konyv { top: 720px; left: 280px; width: 440px; height: 250px; }
+            #fiok { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; background: #5d4037; color: white; text-align: center; padding-top: 15px; z-index: 5; }
+            #loading { display: none; position: absolute; top: 250px; left: 320px; width: 60px; z-index: 30; }
             .juhar { width: 100%; animation: spin 1s linear infinite; }
             @keyframes spin { 100% { transform: rotate(360deg); } }
         </style>
@@ -46,9 +39,8 @@ async def fooldal():
         <div class="frame">
             <div id="nagyito" class="btn" onclick="inditas('camera')"></div>
             <div id="konyv" class="btn" onclick="inditas('file')"></div>
-            
             <div id="fiok">
-                <select id="korosztaly" style="padding: 5px; border-radius: 5px;">
+                <select id="korosztaly">
                     <option value="aprok">Aprókák (3-6)</option>
                     <option value="felfedezok">Felfedezők (7-10)</option>
                     <option value="termeszetbuvarok">Természetbúvárok (11+)</option>
@@ -56,10 +48,8 @@ async def fooldal():
             </div>
         </div>
         <div id="loading"><svg class="juhar" viewBox="0 0 100 100"><path fill="#e67e22" d="M50 10 Q 55 40 80 50 Q 55 60 50 90 Q 45 60 20 50 Q 45 40 50 10 Z"/></svg></div>
-        
         <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
         <input type="file" id="fil" accept="image/*" style="display:none" onchange="upload(this)">
-        
         <script>
             function inditas(tipus) { tipus === 'camera' ? document.getElementById('cam').click() : document.getElementById('fil').click(); }
             async function upload(input) {
@@ -84,13 +74,11 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     contents = await file.read()
     raw_image = Image.open(io.BytesIO(contents)).convert("RGB")
     instrukcio = szemelyisegek.get(korosztaly, szemelyisegek["felfedezok"])
-    
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
         contents=[raw_image, "Mesélj a képről."], 
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
-    
     communicate = edge_tts.Communicate(response.text, "hu-HU-TündeNeural")
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
