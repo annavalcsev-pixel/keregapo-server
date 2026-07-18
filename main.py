@@ -1,6 +1,6 @@
 import io
 from fastapi import FastAPI, File, UploadFile, Form
-from fastapi.responses import Response, HTMLResponse, JSONResponse
+from fastapi.responses import Response, HTMLResponse
 from PIL import Image
 from google import genai
 from google.genai import types
@@ -9,6 +9,7 @@ import edge_tts
 app = FastAPI()
 client = genai.Client()
 
+# Moha Anyó személyiségek
 szemelyisegek = {
     "aprok": "Te Moha Anyó vagy, a természet szerető nagymamája. 3-6 éveseknek mesélsz. Használj egyszerű szavakat, lágy, kedves mondatokat. Mesélj lassabban, meleg hangon, és legyen a történeted nagyon rövid, játékos és tele csodával. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
     "felfedezok": "Te Moha Anyó vagy, a természet bölcs tanítója. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy-két konkrét érdekességet a képen látható dologról, amit mindenképpen nevezz meg, és bátorítsd a gyereket a természet megfigyelésére. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
@@ -22,60 +23,56 @@ async def fooldal():
     <html lang="hu">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>
-            body { margin: 0; background: #2d1b0d; color: #f3e5ab; font-family: sans-serif; overflow: hidden; }
-            .frame { width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/TMvSZm2y/creen1.png'); background-size: cover; background-position: center; position: relative; }
-            /* Gombok rétegei */
-            .interaktiv-gomb { position: absolute; cursor: pointer; z-index: 20; border: none; background: transparent; }
-            #nagyito { top: 15%; left: 10%; width: 20%; height: 20%; }
-            #konyv { top: 60%; left: 20%; width: 60%; height: 25%; }
-            
-            #fiok { 
-                position: absolute; bottom: -120px; left: 10%; width: 80%; height: 180px; 
-                background: #5d4037; border-radius: 20px 20px 0 0; 
-                transition: bottom 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55); 
-                padding: 20px; z-index: 15; text-align: center; cursor: pointer; color: white;
+            body { margin: 0; background: #2d1b0d; overflow: hidden; font-family: sans-serif; }
+            .frame { 
+                width: 100vw; height: 100vh; 
+                background-image: url('https://i.ibb.co/XhH2NxP/Moha-any-2.png'); 
+                background-size: cover; background-position: center; position: relative; 
             }
-            #fiok.nyitva { bottom: 0; }
+            .btn { position: absolute; cursor: pointer; z-index: 20; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; }
+            #nagyito { top: 25%; left: 35%; width: 25%; height: 15%; }
+            #konyv { top: 65%; left: 30%; width: 40%; height: 20%; }
+            
+            #fiok { position: absolute; bottom: 0; left: 0; width: 100%; height: 70px; background: #5d4037; color: white; text-align: center; padding-top: 10px; z-index: 5; }
+            
+            #loading { display: none; position: absolute; top: 45%; left: 40%; width: 20%; z-index: 30; }
+            .juhar { width: 100%; animation: spin 1s linear infinite; }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
         </style>
     </head>
     <body>
         <div class="frame">
-            <!-- Nagyító és Könyv gombok -->
-            <button id="nagyito" class="interaktiv-gomb" onclick="inditas('camera')"></button>
-            <button id="konyv" class="interaktiv-gomb" onclick="inditas('file')"></button>
+            <div id="nagyito" class="btn" onclick="inditas('camera')"></div>
+            <div id="konyv" class="btn" onclick="inditas('file')"></div>
             
-            <div id="fiok" onclick="this.classList.toggle('nyitva')">
-                <p>▼ Korosztály ▼</p>
-                <select id="korosztaly" onclick="event.stopPropagation()">
-                    <option value="aprok">Aprókák</option>
-                    <option value="felfedezok">Felfedezők</option>
-                    <option value="termeszetbuvarok">Természetbúvárok</option>
+            <div id="fiok">
+                <select id="korosztaly" style="padding: 5px; border-radius: 5px;">
+                    <option value="aprok">Aprókák (3-6)</option>
+                    <option value="felfedezok">Felfedezők (7-10)</option>
+                    <option value="termeszetbuvarok">Természetbúvárok (11+)</option>
                 </select>
             </div>
         </div>
+        <div id="loading"><svg class="juhar" viewBox="0 0 100 100"><path fill="#e67e22" d="M50 10 Q 55 40 80 50 Q 55 60 50 90 Q 45 60 20 50 Q 45 40 50 10 Z"/></svg></div>
         
-        <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
-        <input type="file" id="file-input" accept="image/*" style="display:none" onchange="upload(this)">
+        <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
+        <input type="file" id="fil" accept="image/*" style="display:none" onchange="upload(this)">
         
         <script>
-            const hangKi = new Audio('https://freesound.org/data/previews/98/98801_1648766-lq.mp3');
-            
-            function inditas(tipus) {
-                hangKi.play(); // Interakció feloldja a hangot
-                if(tipus === 'camera') document.getElementById('camera-input').click();
-                else document.getElementById('file-input').click();
-            }
-
+            function inditas(tipus) { tipus === 'camera' ? document.getElementById('cam').click() : document.getElementById('fil').click(); }
             async function upload(input) {
-                const formData = new FormData();
-                formData.append('file', input.files[0]);
-                formData.append('korosztaly', document.getElementById('korosztaly').value);
-                const res = await fetch('/api/keregapo', { method: 'POST', body: formData });
+                document.getElementById('loading').style.display = 'block';
+                const fd = new FormData();
+                fd.append('file', input.files[0]);
+                fd.append('korosztaly', document.getElementById('korosztaly').value);
+                const res = await fetch('/api/keregapo', { method: 'POST', body: fd });
                 if(res.ok) {
-                    new Audio(URL.createObjectURL(await res.blob())).play();
+                    const audio = new Audio(URL.createObjectURL(await res.blob()));
+                    audio.play();
                 }
+                document.getElementById('loading').style.display = 'none';
             }
         </script>
     </body>
@@ -90,7 +87,7 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
-        contents=[raw_image, "Mesélj a képről meleg hangon."], 
+        contents=[raw_image, "Mesélj a képről."], 
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
     
