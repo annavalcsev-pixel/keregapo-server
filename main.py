@@ -1,6 +1,6 @@
 import io
 from fastapi import FastAPI, File, UploadFile, Form
-from fastapi.responses import Response, HTMLResponse
+from fastapi.responses import Response, HTMLResponse, JSONResponse
 from PIL import Image
 from google import genai
 from google.genai import types
@@ -9,12 +9,37 @@ import edge_tts
 app = FastAPI()
 client = genai.Client()
 
-# Különböző személyiségek korosztály szerint
+# Személyiségek
 szemelyisegek = {
     "aprok": "Te Kéregapó vagy, egy nagyon kedves manó. 3-6 éveseknek mesélsz. Használj nagyon egyszerű szavakat, rövid mondatokat. Mesélj elvarázsolt hangon, és legyen a történeted nagyon rövid, játékos és tele csodával. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
     "felfedezok": "Te Kéregapó vagy, a természet bölcs tanítója. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy konkrét érdekességet a képen látható dologról, és bátorítsd a gyereket a természet megfigyelésére. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
     "termeszetbuvarok": "Te Kéregapó vagy, az erdő gondos őrzője. 11+ éveseknek mesélsz. A stílusod legyen mély, elgondolkodtató és bölcs. Beszélj a természet összefüggéseiről, az ökológiai egyensúlyról és a környezet tiszteletéről. A történet végén mindig adj egy egyszerű, de komolyan vehető feladatot a képpel kapcsolatosan."
 }
+
+# PWA fájlok dinamikus kiszolgálása
+@app.get("/manifest.json")
+async def get_manifest():
+    return JSONResponse({
+        "name": "Kéregapó Meséi",
+        "short_name": "Kéregapó",
+        "start_url": "/",
+        "display": "fullscreen",
+        "orientation": "portrait",
+        "background_color": "#5d4037",
+        "theme_color": "#5d4037",
+        "icons": [{"src": "https://i.ibb.co/L1V5j5N/icon.png", "sizes": "192x192", "type": "image/png"}]
+    })
+
+@app.get("/service-worker.js")
+async def get_sw():
+    content = """
+    const CACHE_NAME = 'keregapo-v1';
+    self.addEventListener('install', (event) => { event.waitUntil(caches.open(CACHE_NAME)); });
+    self.addEventListener('fetch', (event) => {
+        event.respondWith(caches.match(event.request).then((response) => response || fetch(event.request)));
+    });
+    """
+    return Response(content, media_type="application/javascript")
 
 @app.get("/", response_class=HTMLResponse)
 async def fooldal():
@@ -26,7 +51,7 @@ async def fooldal():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-        <link rel="manifest" href="manifest.json">
+        <link rel="manifest" href="/manifest.json">
         <script>
             if ('serviceWorker' in navigator) {{
                 navigator.serviceWorker.register('/service-worker.js');
@@ -86,24 +111,14 @@ async def fooldal():
 async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(...)):
     contents = await file.read()
     raw_image = Image.open(io.BytesIO(contents)).convert("RGB")
-    
     instrukcio = szemelyisegek.get(korosztaly, szemelyisegek["felfedezok"])
-    
     prompt = "Mesélj a képről! Írj rövid, tagolt mondatokat, mintha csak mesélnél. Használj gyakran kérdéseket, felkiáltásokat és érzelmi kifejezéseket. Kerüld a hosszú, száraz leírásokat; a szöveg legyen élő, lendületes és melegszívű."
-    
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
         contents=[raw_image, prompt], 
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
-    
-    communicate = edge_tts.Communicate(
-        response.text, 
-        "hu-HU-TamasNeural",
-        rate="-5%", 
-        pitch="-5Hz"
-    )
-    
+    communicate = edge_tts.Communicate(response.text, "hu-HU-TamasNeural", rate="-5%", pitch="-5Hz")
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
         if chunk["type"] == "audio": audio_io.write(chunk["data"])
