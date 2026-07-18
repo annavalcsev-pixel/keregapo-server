@@ -17,7 +17,6 @@ szemelyisegek = {
 
 @app.get("/", response_class=HTMLResponse)
 async def fooldal():
-    # A változók helyes összefűzése az f-stringben elkerüli a fehér képernyőt
     return """
     <!DOCTYPE html>
     <html lang="hu">
@@ -27,23 +26,28 @@ async def fooldal():
         <style>
             body { margin: 0; background: #2d1b0d; color: #f3e5ab; font-family: sans-serif; overflow: hidden; }
             .frame { width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/TMvSZm2y/creen1.png'); background-size: cover; background-position: center; position: relative; }
-            .gomb { position: absolute; cursor: pointer; z-index: 10; }
+            /* Gombok rétegei */
+            .interaktiv-gomb { position: absolute; cursor: pointer; z-index: 20; border: none; background: transparent; }
+            #nagyito { top: 15%; left: 10%; width: 20%; height: 20%; }
+            #konyv { top: 60%; left: 20%; width: 60%; height: 25%; }
+            
             #fiok { 
                 position: absolute; bottom: -120px; left: 10%; width: 80%; height: 180px; 
                 background: #5d4037; border-radius: 20px 20px 0 0; 
                 transition: bottom 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55); 
-                padding: 20px; z-index: 5; text-align: center; cursor: pointer; color: white;
+                padding: 20px; z-index: 15; text-align: center; cursor: pointer; color: white;
             }
             #fiok.nyitva { bottom: 0; }
-            .sparkle { position: absolute; width: 8px; height: 8px; background: gold; border-radius: 50%; pointer-events: none; animation: float 1.5s forwards; }
-            @keyframes float { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100px); opacity: 0; } }
         </style>
     </head>
     <body>
         <div class="frame">
-            <div class="gomb" style="top: 15%; left: 10%; width: 20%; height: 20%;" onclick="startCamera()"></div>
+            <!-- Nagyító és Könyv gombok -->
+            <button id="nagyito" class="interaktiv-gomb" onclick="inditas('camera')"></button>
+            <button id="konyv" class="interaktiv-gomb" onclick="inditas('file')"></button>
+            
             <div id="fiok" onclick="this.classList.toggle('nyitva')">
-                <p>▼ Melyik korosztálynak meséljen Moha Anyó? ▼</p>
+                <p>▼ Korosztály ▼</p>
                 <select id="korosztaly" onclick="event.stopPropagation()">
                     <option value="aprok">Aprókák</option>
                     <option value="felfedezok">Felfedezők</option>
@@ -51,28 +55,23 @@ async def fooldal():
                 </select>
             </div>
         </div>
+        
         <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
+        <input type="file" id="file-input" accept="image/*" style="display:none" onchange="upload(this)">
         
         <script>
-            function startCamera() { document.getElementById('camera-input').click(); }
+            const hangKi = new Audio('https://freesound.org/data/previews/98/98801_1648766-lq.mp3');
             
-            function createSparkles() {
-                for(let i=0; i<10; i++) {
-                    let s = document.createElement('div');
-                    s.className = 'sparkle';
-                    s.style.left = Math.random() * 100 + 'vw';
-                    s.style.top = Math.random() * 80 + 'vh';
-                    document.body.appendChild(s);
-                    setTimeout(() => s.remove(), 1500);
-                }
+            function inditas(tipus) {
+                hangKi.play(); // Interakció feloldja a hangot
+                if(tipus === 'camera') document.getElementById('camera-input').click();
+                else document.getElementById('file-input').click();
             }
 
             async function upload(input) {
-                createSparkles();
                 const formData = new FormData();
                 formData.append('file', input.files[0]);
                 formData.append('korosztaly', document.getElementById('korosztaly').value);
-                
                 const res = await fetch('/api/keregapo', { method: 'POST', body: formData });
                 if(res.ok) {
                     new Audio(URL.createObjectURL(await res.blob())).play();
