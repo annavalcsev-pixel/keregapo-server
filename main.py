@@ -27,17 +27,18 @@ async def fooldal():
             body { margin: 0; background: #2d1b0d; overflow: hidden; }
             .frame { width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/XhH2NxP/Moha-any-2.png'); background-size: cover; background-position: center; position: relative; }
             
-            /* Gombok százalékos pozícióval */
+            /* Gombok - finomhangolt pozíciók */
             .btn { position: absolute; cursor: pointer; z-index: 20; background: transparent; }
-            #nagyito { top: 22%; left: 10%; width: 25%; height: 15%; }
+            #nagyito { top: 30%; left: 16%; width: 20%; height: 12%; }
             #konyv { top: 72%; left: 25%; width: 50%; height: 18%; }
             
-            /* Betöltésjelző a nagyító fölött */
-            #loading { display: none; position: absolute; top: 15%; left: 15%; width: 15%; z-index: 30; }
+            #loading { display: none; position: absolute; top: 20%; left: 20%; width: 12%; z-index: 30; }
             .juhar { width: 100%; animation: spin 1s linear infinite; }
             @keyframes spin { 100% { transform: rotate(360deg); } }
             
-            #fiok { position: absolute; bottom: 0; width: 100%; height: 50px; background: #5d4037; color: white; text-align: center; padding-top: 10px; z-index: 5; }
+            /* Fiók és választó - z-index növelve */
+            #fiok { position: absolute; bottom: 0; width: 100%; height: 60px; background: #5d4037; color: white; text-align: center; padding-top: 10px; z-index: 100; }
+            select { font-size: 16px; padding: 5px; z-index: 101; }
         </style>
     </head>
     <body>
@@ -86,7 +87,8 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
     
-    communicate = edge_tts.Communicate(response.text, "hu-HU-TündeNeural")
+    # Új, meleg női hang: Noémi
+    communicate = edge_tts.Communicate(response.text, "hu-HU-NoemiNeural")
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
         if chunk["type"] == "audio": audio_io.write(chunk["data"])
