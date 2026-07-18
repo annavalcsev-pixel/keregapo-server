@@ -11,9 +11,9 @@ client = genai.Client()
 
 # Személyiségek (Moha Anyó stílusban)
 szemelyisegek = {
-    "aprok": "Te Moha Anyó vagy, a természet szerető nagymamája. 3-6 éveseknek mesélsz. Használj nagyon egyszerű szavakat, lágy, kedves mondatokat. Mesélj lassabban, meleg hangon, és legyen a történeted nagyon rövid, játékos és tele csodával. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
-    "felfedezok": "Te Moha Anyó vagy, a természet bölcs tanítója. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy konkrét érdekességet a képen látható dologról, és bátorítsd a gyereket a természet megfigyelésére. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
-    "termeszetbuvarok": "Te Moha Anyó vagy, az erdő gondos őrzője. 11+ éveseknek mesélsz. A stílusod legyen mély, elgondolkodtató és bölcs. Beszélj a természet összefüggéseiről, az ökológiai egyensúlyról és a környezet tiszteletéről. A történet végén mindig adj egy egyszerű, de komolyan vehető feladatot a képpel kapcsolatosan."
+    "aprok": "Te Moha Anyó vagy, a természet szerető nagymamája. 3-6 éveseknek mesélsz. Használj egyszerű szavakat, lágy, kedves mondatokat. Mesélj lassabban, meleg hangon, és legyen a történeted nagyon rövid, játékos és tele csodával. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
+    "felfedezok": "Te Moha Anyó vagy, a természet bölcs tanítója. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy-két konkrét érdekességet a képen látható dologról, amit mindenképpen nevezz meg, és bátorítsd a gyereket a természet megfigyelésére. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
+    "termeszetbuvarok": "Te Moha Anyó vagy, az erdő gondos őrzője. 11+ éveseknek mesélsz. A stílusod legyen mély, elgondolkodtató és bölcs, és mindenképpen nevezd meg a képen látható dolgot. Beszélj a természet összefüggéseiről, az ökológiai egyensúlyról és a környezet tiszteletéről. A történet végén mindig adj egy egyszerű, de komolyan vehető feladatot a képpel kapcsolatosan."
 }
 
 @app.get("/manifest.json")
@@ -55,8 +55,9 @@ async def fooldal():
         <style>
             body {{ margin: 0; background: #2d1b0d; color: #f3e5ab; font-family: sans-serif; overflow: hidden; }}
             .frame {{ width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/TMvSZm2y/creen1.png'); background-size: cover; background-position: center; position: relative; }}
-            .nagyito {{ position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; cursor: pointer; z-index: 10; }}
-            .konyv {{ position: absolute; top: 60%; left: 20%; width: 60%; height: 25%; cursor: pointer; z-index: 10; }}
+            .nagyito, .konyv {{ position: absolute; cursor: pointer; z-index: 10; }}
+            .nagyito {{ top: 15%; left: 10%; width: 20%; height: 20%; }}
+            .konyv {{ top: 60%; left: 20%; width: 60%; height: 25%; }}
             #fiok {{ position: absolute; bottom: -120px; left: 10%; width: 80%; height: 180px; background: #5d4037; border-radius: 20px 20px 0 0; transition: bottom 0.5s; padding: 20px; box-sizing: border-box; text-align: center; cursor: pointer; z-index: 5; }}
             #fiok.nyitva {{ bottom: 0; }}
             #loading {{ display: none; position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; z-index: 20; pointer-events: none; }}
@@ -82,10 +83,11 @@ async def fooldal():
         <input type="file" id="file-input" accept="image/*" onchange="upload(this)" style="display:none">
         
         <script>
-            // Ide illeszd be a te általad választott fiók hangot
-            const hangKi = new Audio('IDE_A_TE_FIÓK_NYITÓ_HANGOD_LINKJE');
-            const hangBe = new Audio('IDE_A_TE_FIÓK_ZÁRÓ_HANGOD_LINKJE');
-            const hangKeresgeles = new Audio('https://www.soundjay.com/misc/sounds/paper-crinkling-1.mp3');
+            // Fiók hangok
+            const hangKi = new Audio('https://freesound.org/data/previews/98/98801_1648766-lq.mp3');
+            const hangBe = new Audio('https://freesound.org/data/previews/98/98801_1648766-lq.mp3');
+            // Lapozgatós hang várakozáshoz
+            const hangLapoz = new Audio('https://www.soundjay.com/misc/sounds/paper-crinkling-1.mp3');
 
             function fiokToggle(el) {{
                 el.classList.toggle('nyitva');
@@ -94,13 +96,14 @@ async def fooldal():
 
             async function upload(input) {{
                 document.getElementById('loading').style.display = 'block';
-                hangKeresgeles.play();
+                hangLapoz.loop = true;
+                hangLapoz.play();
                 const formData = new FormData();
                 formData.append('file', input.files[0]);
                 formData.append('korosztaly', document.getElementById('korosztaly').value);
                 const res = await fetch('/api/keregapo', {{ method: 'POST', body: formData }});
                 if(res.ok) {{
-                    hangKeresgeles.pause();
+                    hangLapoz.pause();
                     new Audio(URL.createObjectURL(await res.blob())).play();
                 }}
                 document.getElementById('loading').style.display = 'none';
@@ -117,13 +120,13 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     instrukcio = szemelyisegek.get(korosztaly, szemelyisegek["felfedezok"])
     prompt = "Mesélj a képről! Írj rövid, tagolt mondatokat, mintha csak mesélnél. Használj gyakran kérdéseket, felkiáltásokat és érzelmi kifejezéseket. Kerüld a hosszú, száraz leírásokat; a szöveg legyen élő, lendületes és melegszívű."
     
-    # Itt váltottunk Noémire
+    # Frissítve: Tünde hang, lassítva és mélyítve a nagymamás érzéshez
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
         contents=[raw_image, prompt], 
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
-    communicate = edge_tts.Communicate(response.text, "hu-HU-NoemiNeural", rate="-10%", pitch="-10Hz")
+    communicate = edge_tts.Communicate(response.text, "hu-HU-TündeNeural", rate="-15%", pitch="-20Hz")
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
         if chunk["type"] == "audio": audio_io.write(chunk["data"])
