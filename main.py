@@ -47,66 +47,48 @@ async def fooldal():
     <html lang="hu">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
         <link rel="manifest" href="/manifest.json">
         <script>
             if ('serviceWorker' in navigator) {{ navigator.serviceWorker.register('/service-worker.js'); }}
         </script>
         <style>
             body {{ margin: 0; background: #2d1b0d; color: #f3e5ab; font-family: sans-serif; overflow: hidden; }}
-            .frame {{ width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/TMvSZm2y/creen1.png'); background-size: cover; background-position: center; position: relative; }}
-            .nagyito, .konyv {{ position: absolute; cursor: pointer; z-index: 10; }}
-            .nagyito {{ top: 15%; left: 10%; width: 20%; height: 20%; }}
-            .konyv {{ top: 60%; left: 20%; width: 60%; height: 25%; }}
-            #fiok {{ position: absolute; bottom: -120px; left: 10%; width: 80%; height: 180px; background: #5d4037; border-radius: 20px 20px 0 0; transition: bottom 0.5s; padding: 20px; box-sizing: border-box; text-align: center; cursor: pointer; z-index: 5; }}
+            .frame {{ width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/TMvSZm2y/creen1.png'); background-size: cover; position: relative; }}
+            .gomb {{ position: absolute; cursor: pointer; z-index: 10; }}
+            #fiok {{ position: absolute; bottom: -120px; left: 10%; width: 80%; height: 180px; background: #5d4037; border-radius: 20px 20px 0 0; transition: bottom 0.5s; padding: 20px; z-index: 5; text-align: center; cursor: pointer; }}
             #fiok.nyitva {{ bottom: 0; }}
-            #loading {{ display: none; position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; z-index: 20; pointer-events: none; }}
-            .juhar {{ width: 100%; height: 100%; animation: spin 1s linear infinite; filter: drop-shadow(0 0 5px white); }}
-            @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
         </style>
     </head>
     <body>
         <div class="frame">
-            <div class="nagyito" onclick="document.getElementById('camera-input').click()"></div>
-            <div class="konyv" onclick="document.getElementById('file-input').click()"></div>
-            <div id="fiok" onclick="fiokToggle(this)">
-                <p>▼ Melyik korosztálynak meséljen Moha Anyó? ▼</p>
+            <div class="gomb" style="top: 15%; left: 10%; width: 20%; height: 20%;" onclick="startInteraction()"></div>
+            <div id="fiok" onclick="this.classList.toggle('nyitva')">
+                <p>▼ Válaszd ki ki vagy! ▼</p>
                 <select id="korosztaly" onclick="event.stopPropagation()">
-                    <option value="aprok">Aprókák (3-6 év)</option>
-                    <option value="felfedezok">Felfedezők (7-10 év)</option>
-                    <option value="termeszetbuvarok">Természetbúvárok (11+ év)</option>
+                    <option value="aprok">Aprókák</option>
+                    <option value="felfedezok">Felfedezők</option>
+                    <option value="termeszetbuvarok">Természetbúvárok</option>
                 </select>
             </div>
         </div>
-        <div id="loading"><svg class="juhar" viewBox="0 0 100 100"><path fill="#e67e22" d="M50 10 Q 55 40 80 50 Q 55 60 50 90 Q 45 60 20 50 Q 45 40 50 10 Z"/></svg></div>
-        <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="upload(this)" style="display:none">
-        <input type="file" id="file-input" accept="image/*" onchange="upload(this)" style="display:none">
+        <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
         
         <script>
-            // Fiók hangok
-            const hangKi = new Audio('https://freesound.org/data/previews/98/98801_1648766-lq.mp3');
-            const hangBe = new Audio('https://freesound.org/data/previews/98/98801_1648766-lq.mp3');
-            // Lapozgatós hang várakozáshoz
-            const hangLapoz = new Audio('https://www.soundjay.com/misc/sounds/paper-crinkling-1.mp3');
-
-            function fiokToggle(el) {{
-                el.classList.toggle('nyitva');
-                el.classList.contains('nyitva') ? hangKi.play() : hangBe.play();
+            function startInteraction() {{
+                document.getElementById('camera-input').click();
             }}
 
             async function upload(input) {{
-                document.getElementById('loading').style.display = 'block';
-                hangLapoz.loop = true;
-                hangLapoz.play();
                 const formData = new FormData();
                 formData.append('file', input.files[0]);
                 formData.append('korosztaly', document.getElementById('korosztaly').value);
+                
                 const res = await fetch('/api/keregapo', {{ method: 'POST', body: formData }});
                 if(res.ok) {{
-                    hangLapoz.pause();
-                    new Audio(URL.createObjectURL(await res.blob())).play();
+                    const audio = new Audio(URL.createObjectURL(await res.blob()));
+                    audio.play(); 
                 }}
-                document.getElementById('loading').style.display = 'none';
             }}
         </script>
     </body>
@@ -118,15 +100,14 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     contents = await file.read()
     raw_image = Image.open(io.BytesIO(contents)).convert("RGB")
     instrukcio = szemelyisegek.get(korosztaly, szemelyisegek["felfedezok"])
-    prompt = "Mesélj a képről! Írj rövid, tagolt mondatokat, mintha csak mesélnél. Használj gyakran kérdéseket, felkiáltásokat és érzelmi kifejezéseket. Kerüld a hosszú, száraz leírásokat; a szöveg legyen élő, lendületes és melegszívű."
     
-    # Frissítve: Tünde hang, lassítva és mélyítve a nagymamás érzéshez
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
-        contents=[raw_image, prompt], 
+        contents=[raw_image, "Mesélj a képről meleg hangon."], 
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
-    communicate = edge_tts.Communicate(response.text, "hu-HU-TündeNeural", rate="-15%", pitch="-20Hz")
+    
+    communicate = edge_tts.Communicate(response.text, "hu-HU-TündeNeural")
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
         if chunk["type"] == "audio": audio_io.write(chunk["data"])
