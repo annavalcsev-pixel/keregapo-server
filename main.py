@@ -29,8 +29,8 @@ async def fooldal():
             
             /* Gombok - finomhangolt pozíciók */
             .btn { position: absolute; cursor: pointer; z-index: 20; background: transparent; }
-            #nagyito { top: 33%; left: 19%; width: 20%; height: 12%; }
-            #konyv { top: 70%; left: 25%; width: 50%; height: 18%; }
+            #nagyito { top: 35%; left: 22%; width: 20%; height: 12%; }
+            #konyv { top: 68%; left: 25%; width: 50%; height: 18%; }
             
             #loading { display: none; position: absolute; top: 20%; left: 20%; width: 12%; z-index: 30; }
             .juhar { width: 100%; animation: spin 1s linear infinite; }
