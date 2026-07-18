@@ -54,11 +54,14 @@ async def fooldal():
         </script>
         <style>
             body {{ margin: 0; background: #2d1b0d; color: #f3e5ab; font-family: sans-serif; overflow: hidden; }}
-            .frame {{ width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/TMvSZm2y/creen1.png'); background-size: cover; background-position: center; }}
-            .nagyito {{ position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; cursor: pointer; }}
-            #fiok {{ position: absolute; bottom: -120px; left: 10%; width: 80%; height: 180px; background: #5d4037; border-radius: 20px 20px 0 0; transition: bottom 0.5s; padding: 20px; box-sizing: border-box; text-align: center; cursor: pointer; }}
+            .frame {{ width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/TMvSZm2y/creen1.png'); background-size: cover; background-position: center; position: relative; }}
+            /* Gombok a fiók fölött (z-index: 10) */
+            .nagyito {{ position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; cursor: pointer; z-index: 10; }}
+            .konyv {{ position: absolute; top: 60%; left: 20%; width: 60%; height: 25%; cursor: pointer; z-index: 10; }}
+            /* Fiók (z-index: 5) */
+            #fiok {{ position: absolute; bottom: -120px; left: 10%; width: 80%; height: 180px; background: #5d4037; border-radius: 20px 20px 0 0; transition: bottom 0.5s; padding: 20px; box-sizing: border-box; text-align: center; cursor: pointer; z-index: 5; }}
             #fiok.nyitva {{ bottom: 0; }}
-            #loading {{ display: none; position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; z-index: 100; pointer-events: none; }}
+            #loading {{ display: none; position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; z-index: 20; pointer-events: none; }}
             .juhar {{ width: 100%; height: 100%; animation: spin 1s linear infinite; filter: drop-shadow(0 0 5px white); }}
             @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
         </style>
@@ -66,8 +69,9 @@ async def fooldal():
     <body>
         <div class="frame">
             <div class="nagyito" onclick="document.getElementById('camera-input').click()"></div>
+            <div class="konyv" onclick="document.getElementById('file-input').click()"></div>
             <div id="fiok" onclick="fiokToggle(this)">
-                <p>▼ Koppints a fiók kinyitásához ▼</p>
+                <p>▼ Korosztály választó ▼</p>
                 <select id="korosztaly" onclick="event.stopPropagation()">
                     <option value="aprok">Aprókák (3-6 év)</option>
                     <option value="felfedezok">Felfedezők (7-10 év)</option>
@@ -77,6 +81,7 @@ async def fooldal():
         </div>
         <div id="loading"><svg class="juhar" viewBox="0 0 100 100"><path fill="#e67e22" d="M50 10 Q 55 40 80 50 Q 55 60 50 90 Q 45 60 20 50 Q 45 40 50 10 Z"/></svg></div>
         <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="upload(this)" style="display:none">
+        <input type="file" id="file-input" accept="image/*" onchange="upload(this)" style="display:none">
         
         <script>
             const hangKi = new Audio('https://www.soundjay.com/buttons/sounds/button-10.mp3');
