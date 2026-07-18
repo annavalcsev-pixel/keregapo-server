@@ -16,7 +16,6 @@ szemelyisegek = {
     "termeszetbuvarok": "Te Kéregapó vagy, az erdő gondos őrzője. 11+ éveseknek mesélsz. A stílusod legyen mély, elgondolkodtató és bölcs. Beszélj a természet összefüggéseiről, az ökológiai egyensúlyról és a környezet tiszteletéről. A történet végén mindig adj egy egyszerű, de komolyan vehető feladatot a képpel kapcsolatosan."
 }
 
-# PWA fájlok dinamikus kiszolgálása
 @app.get("/manifest.json")
 async def get_manifest():
     return JSONResponse({
@@ -43,8 +42,6 @@ async def get_sw():
 
 @app.get("/", response_class=HTMLResponse)
 async def fooldal():
-    hatter_kep = "https://i.ibb.co/TMvSZm2y/creen1.png" 
-    
     return f"""
     <!DOCTYPE html>
     <html lang="hu">
@@ -53,17 +50,14 @@ async def fooldal():
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <link rel="manifest" href="/manifest.json">
         <script>
-            if ('serviceWorker' in navigator) {{
-                navigator.serviceWorker.register('/service-worker.js');
-            }}
+            if ('serviceWorker' in navigator) {{ navigator.serviceWorker.register('/service-worker.js'); }}
         </script>
         <style>
-            body {{ margin: 0; padding: 0; height: 100vh; background-color: #5d4037; overflow: hidden; }}
-            .frame {{ position: relative; width: 100vw; height: 100vh; background-image: url('{hatter_kep}'); background-size: cover; background-position: center; }}
+            body {{ margin: 0; background: #2d1b0d; color: #f3e5ab; font-family: sans-serif; overflow: hidden; }}
+            .frame {{ width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/TMvSZm2y/creen1.png'); background-size: cover; background-position: center; }}
             .nagyito {{ position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; cursor: pointer; }}
-            .konyv {{ position: absolute; top: 60%; left: 20%; width: 60%; height: 25%; cursor: pointer; }}
-            .korosztaly-valaszto {{ position: absolute; top: 5%; left: 10%; width: 80%; text-align: center; color: white; font-family: sans-serif; }}
-            select {{ padding: 10px; border-radius: 10px; background: #8d6e63; color: white; border: none; font-size: 16px; }}
+            #fiok {{ position: absolute; bottom: -120px; left: 10%; width: 80%; height: 180px; background: #5d4037; border-radius: 20px 20px 0 0; transition: bottom 0.5s; padding: 20px; box-sizing: border-box; text-align: center; cursor: pointer; }}
+            #fiok.nyitva {{ bottom: 0; }}
             #loading {{ display: none; position: absolute; top: 15%; left: 10%; width: 20%; height: 20%; z-index: 100; pointer-events: none; }}
             .juhar {{ width: 100%; height: 100%; animation: spin 1s linear infinite; filter: drop-shadow(0 0 5px white); }}
             @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
@@ -71,35 +65,40 @@ async def fooldal():
     </head>
     <body>
         <div class="frame">
-            <div class="korosztaly-valaszto">
-                <label>Kinek meséljen Kéregapó?</label><br>
-                <select id="korosztaly">
+            <div class="nagyito" onclick="document.getElementById('camera-input').click()"></div>
+            <div id="fiok" onclick="fiokToggle(this)">
+                <p>▼ Koppints a fiók kinyitásához ▼</p>
+                <select id="korosztaly" onclick="event.stopPropagation()">
                     <option value="aprok">Aprókák (3-6 év)</option>
                     <option value="felfedezok">Felfedezők (7-10 év)</option>
                     <option value="termeszetbuvarok">Természetbúvárok (11+ év)</option>
                 </select>
             </div>
-            <div class="nagyito" onclick="document.getElementById('camera-input').click()"></div>
-            <div class="konyv" onclick="document.getElementById('file-input').click()"></div>
         </div>
         <div id="loading"><svg class="juhar" viewBox="0 0 100 100"><path fill="#e67e22" d="M50 10 Q 55 40 80 50 Q 55 60 50 90 Q 45 60 20 50 Q 45 40 50 10 Z"/></svg></div>
         <input type="file" id="camera-input" accept="image/*" capture="environment" onchange="upload(this)" style="display:none">
-        <input type="file" id="file-input" accept="image/*" onchange="upload(this)" style="display:none">
+        
         <script>
+            const hangKi = new Audio('https://www.soundjay.com/buttons/sounds/button-10.mp3');
+            const hangBe = new Audio('https://www.soundjay.com/buttons/sounds/button-11.mp3');
+            const hangKeresgeles = new Audio('https://www.soundjay.com/misc/sounds/paper-crinkling-1.mp3');
+
+            function fiokToggle(el) {{
+                el.classList.toggle('nyitva');
+                el.classList.contains('nyitva') ? hangKi.play() : hangBe.play();
+            }}
+
             async function upload(input) {{
-                if (!input.files || input.files.length === 0) return;
                 document.getElementById('loading').style.display = 'block';
+                hangKeresgeles.play();
                 const formData = new FormData();
                 formData.append('file', input.files[0]);
                 formData.append('korosztaly', document.getElementById('korosztaly').value);
-                try {{
-                    const res = await fetch('/api/keregapo', {{ method: 'POST', body: formData }});
-                    if(res.ok) {{
-                        const blob = await res.blob();
-                        const url = URL.createObjectURL(blob);
-                        new Audio(url).play();
-                    }}
-                }} catch(e) {{ console.error(e); }}
+                const res = await fetch('/api/keregapo', {{ method: 'POST', body: formData }});
+                if(res.ok) {{
+                    hangKeresgeles.pause();
+                    new Audio(URL.createObjectURL(await res.blob())).play();
+                }}
                 document.getElementById('loading').style.display = 'none';
             }}
         </script>
