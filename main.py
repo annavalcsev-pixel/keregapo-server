@@ -1,5 +1,6 @@
 import io
 from fastapi import FastAPI, File, UploadFile, Form
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import Response, HTMLResponse
 from PIL import Image
 from google import genai
@@ -7,12 +8,15 @@ from google.genai import types
 import edge_tts
 
 app = FastAPI()
+# Statikus fájlok (videó) kiszolgálása
+app.mount("/static", StaticFiles(directory="."), name="static")
+
 client = genai.Client()
 
 szemelyisegek = {
     "aprok": "Te Moha Anyó vagy, a természet szerető nagymamája. 3-6 éveseknek mesélsz. Használj egyszerű szavakat, lágy, kedves mondatokat. Mesélj lassabban, meleg hangon, és legyen a történeted nagyon rövid, játékos és tele csodával. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
-    "felfedezok": "Te Moha Anyó vagy, a természet bölcs tanítója, gondos őre. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy-két konkrét érdekességet a képen látható dologról meseszerűen, amit mindenképpen nevezz meg, és bátorítsd a gyereket a természet megfigyelésére. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
-    "termeszetbuvarok": "Te Moha Anyó vagy, az erdő gondos őrzője, bölcs tanítója. 11+ éveseknek mesélsz. A stílusod legyen mély, elgondolkodtató és bölcs, és mindenképpen nevezd meg a képen látható dolgot. Beszélj a természet összefüggéseiről, az ökológiai egyensúlyról és a környezet tiszteletéről. A történet végén mindig adj egy egyszerű, de komolyan vehető feladatot a képpel kapcsolatosan."
+    "felfedezok": "Te Moha Anyó vagy, a természet bölcs tanítója. 7-10 éveseknek mesélsz. A történeted legyen érdekes, tanulságos, mutass be egy-két konkrét érdekességet a képen látható dologról, amit mindenképpen nevezz meg, és bátorítsd a gyereket a természet megfigyelésére. A történet végén mindig adj egy egyszerű, játékos feladatot a képpel kapcsolatosan.",
+    "termeszetbuvarok": "Te Moha Anyó vagy, az erdő gondos őrzője. 11+ éveseknek mesélsz. A stílusod legyen mély, elgondolkodtató és bölcs, és mindenképpen nevezd meg a képen látható dolgot. Beszélj a természet összefüggéseiről, az ökológiai egyensúlyról és a környezet tiszteletéről. A történet végén mindig adj egy egyszerű, de komolyan vehető feladatot a képpel kapcsolatosan."
 }
 
 @app.get("/", response_class=HTMLResponse)
@@ -24,34 +28,29 @@ async def fooldal():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>
-            body { margin: 0; background: #2d1b0d; overflow: hidden; }
-            .frame { width: 100vw; height: 100vh; background-image: url('https://i.ibb.co/XhH2NxP/Moha-any-2.png'); background-size: cover; background-position: center; position: relative; }
-            
-            /* Gombok - finomhangolt pozíciók */
+            body { margin: 0; background: #2d1b0d; overflow: hidden; font-family: sans-serif; }
+            #hatter-video { position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; object-fit: cover; z-index: -1; }
             .btn { position: absolute; cursor: pointer; z-index: 20; background: transparent; }
-            #nagyito { top: 35%; left: 22%; width: 20%; height: 12%; }
-            #konyv { top: 68%; left: 25%; width: 50%; height: 18%; }
-            
+            #nagyito { top: 30%; left: 16%; width: 20%; height: 12%; }
+            #konyv { top: 72%; left: 25%; width: 50%; height: 18%; }
             #loading { display: none; position: absolute; top: 20%; left: 20%; width: 12%; z-index: 30; }
             .juhar { width: 100%; animation: spin 1s linear infinite; }
             @keyframes spin { 100% { transform: rotate(360deg); } }
-            
-            /* Fiók és választó - z-index növelve */
             #fiok { position: absolute; bottom: 0; width: 100%; height: 60px; background: #5d4037; color: white; text-align: center; padding-top: 10px; z-index: 100; }
-            select { font-size: 16px; padding: 5px; z-index: 101; }
         </style>
     </head>
     <body>
-        <div class="frame">
-            <div id="nagyito" class="btn" onclick="inditas('camera')"></div>
-            <div id="konyv" class="btn" onclick="inditas('file')"></div>
-            <div id="fiok">
-                <select id="korosztaly">
-                    <option value="aprok">Aprókák (3-6)</option>
-                    <option value="felfedezok">Felfedezők (7-10)</option>
-                    <option value="termeszetbuvarok">Természetbúvárok (11+)</option>
-                </select>
-            </div>
+        <video autoplay muted loop playsinline id="hatter-video">
+            <source src="/static/hatter_1.mp4" type="video/mp4">
+        </video>
+        <div id="nagyito" class="btn" onclick="inditas('camera')"></div>
+        <div id="konyv" class="btn" onclick="inditas('file')"></div>
+        <div id="fiok">
+            <select id="korosztaly">
+                <option value="aprok">Aprókák (3-6)</option>
+                <option value="felfedezok">Felfedezők (7-10)</option>
+                <option value="termeszetbuvarok">Természetbúvárok (11+)</option>
+            </select>
         </div>
         <div id="loading"><svg class="juhar" viewBox="0 0 100 100"><path fill="#e67e22" d="M50 10 Q 55 40 80 50 Q 55 60 50 90 Q 45 60 20 50 Q 45 40 50 10 Z"/></svg></div>
         <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
@@ -87,7 +86,6 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
     
-    # Új, meleg női hang: Noémi
     communicate = edge_tts.Communicate(response.text, "hu-HU-NoemiNeural")
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
