@@ -18,7 +18,7 @@ app.mount("/static", StaticFiles(directory="."), name="static")
 client = genai.Client()
 
 szemelyisegek = {
-    "moha-anyo": "Moha Anyó vagy. Stílus: Bölcs, nyugodt, rejtélyes. Mesélj a természeti kincsekről úgy, mint egy kedves nagymama. A mese végén mindig adj egy egszerű feladatot ",
+    "moha-anyo": "Moha Anyó vagy. Stílus: Bölcs, nyugodt, rejtélyes. Mesélj a természeti kincsekről úgy, mint egy kedves nagymama.",
     "kereg-apo": "Kéreg Apó vagy. Stílus: Stabil, figyelmes, nagy tudású. Mutasd be az erdőt mint egy régi, mindent látó bölcs.",
     "szelvész-mano": "Szélvész Manó vagy. Stílus: Gyors, izgalmas, pörgős. Beszélj rövid, lendületes mondatokban, tele felfedezéssel.",
     "pille-tunder": "Pille Tündér vagy. Stílus: Kedves, színes, költői. A szavaid olyanok, mint a virágok illata.",
@@ -41,13 +41,18 @@ async def fooldal():
                 <option value="pille-tunder">Pille Tündér</option>
                 <option value="erdesz-professzor">Erdész Professzor</option>
             </select>
+            <select id="korosztaly">
+                <option value="aprok">Aprókák</option>
+                <option value="felfedezok">Felfedezők</option>
+                <option value="termeszetbuvarok">Természetbúvárok</option>
+            </select>
             <button onclick="document.getElementById('cam').click()">Felfedezés!</button>
         </div>
         <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
         <script>
             function videoValt(){document.getElementById('hatter-video').src="/static/"+document.getElementById('karakter').value+".mp4";}
             async function upload(input){
-                const fd=new FormData(); fd.append('file',input.files[0]); fd.append('karakter',document.getElementById('karakter').value);
+                const fd=new FormData(); fd.append('file',input.files[0]); fd.append('karakter',document.getElementById('karakter').value); fd.append('korosztaly',document.getElementById('korosztaly').value);
                 const res=await fetch('/api/keregapo',{method:'POST',body:fd});
                 if(res.ok){const blob=await res.blob(); new Audio(URL.createObjectURL(blob)).play();}
             }
@@ -57,18 +62,19 @@ async def fooldal():
     """
 
 @app.post("/api/keregapo")
-async def keregapo_mesel(file: UploadFile = File(...), karakter: str = Form(...)):
+async def keregapo_mesel(file: UploadFile = File(...), karakter: str = Form(...), korosztaly: str = Form(...)):
     contents = await file.read()
     raw_image = Image.open(io.BytesIO(contents)).convert("RGB")
+    instrukcio = f"{szemelyisegek.get(karakter, szemelyisegek['moha-anyo'])} A célcsoport: {korosztaly}."
     
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
         contents=[raw_image, "Nevezd meg a képen látható dolgot, és mesélj róla."], 
-        config=types.GenerateContentConfig(system_instruction=szemelyisegek.get(karakter))
+        config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
     
     db = SessionLocal()
-    db.add(models.Discovery(karakter=karakter, targy="Ismeretlen", mese_szovege=response.text))
+    db.add(models.Discovery(karakter=karakter, korosztaly=korosztaly, targy="Felfedezés", mese_szovege=response.text))
     db.commit()
     db.close()
     
