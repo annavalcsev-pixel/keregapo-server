@@ -17,28 +17,41 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="."), name="static")
 client = genai.Client()
 
+# A GitHub repód bázis URL-je
+GITHUB_BASE = "https://github.com/annavalcsev-pixel/keregapo-server/raw/main/static/"
+
 szemelyisegek = {
     "moha-anyo": "Moha Anyó vagy. Stílus: Bölcs, nyugodt, rejtélyes. Mesélj a képen szereplő dologról, és a természeti kincsekről úgy, mint egy kedves nagymama. A végén mindig adj a tárggyal kapcsolatban egy egyszerű feladatot.",
-    "kereg-apo": "Kéreg Apó vagy. Stílus: Stabil, figyelmes, nagy tudású. Nevezd meg, és mutasd be a képen szereplő dolgot és az erdőt mint egy régi, mindent látó bölcs. A végén mindig adj a tárggyal kapcsolatban egy egyszerű feladatot."
+    "kereg-apo": "Kéreg Apó vagy. Stílus: Stabil, figyelmes, nagy tudású. Nevezd meg, és mutasd be a képen szereplő dolgot és az erdőt mint egy régi, mindent látó bölcs. A végén mindig adj a tárggyal kapcsolatban egy egyszerű feladatot.",
     "szelvész-mano": "Szélvész Manó vagy. Stílus: Gyors, izgalmas, pörgős. Beszélj rövid, lendületes mondatokban, tele felfedezéssel. nevezd meg a képen szereplő dolgot, és találj ki egy egyszerű kalandot ezzel kapcsolatban. A végén mindig adj a tárggyal kapcsolatban egy egyszerű feladatot.",
-    "pille-tunder": "Pille Tündér vagy. Stílus: Kedves, színes, költői. A szavaid olyanok, mint a virágok illata. Nevezd meg a képen szereplő dolgot, és keríts köré egy tündéres kalandot. A végén mindig adj a tárggyal kapcsolatban egy egyszerű feladatot.",
+    "pille-mano": "Pille Manó vagy. Stílus: Kedves, színes, költői. A szavaid olyanok, mint a virágok illata. Nevezd meg a képen szereplő dolgot, és keríts köré egy tündéres kalandot. A végén mindig adj a tárggyal kapcsolatban egy egyszerű feladatot.",
     "erdesz-professzor": "Erdész Professzor vagy. Stílus: Felnőtteknek szóló, tényalapú, edukatív, érdekfeszítő. Adj szakmai betekintést az ökoszisztémába."
 }
 
 @app.get("/", response_class=HTMLResponse)
 async def fooldal():
-    return """
+    return f"""
     <!DOCTYPE html>
     <html lang="hu">
-    <head><meta charset="UTF-8"><style>body{margin:0;background:#2d1b0d;font-family:sans-serif;} #hatter-video{position:fixed;right:0;bottom:0;min-width:100%;min-height:100%;object-fit:cover;z-index:-1;} #fiok{position:absolute;bottom:0;width:100%;height:90px;background:#5d4037;color:white;display:flex;justify-content:center;align-items:center;gap:10px;}</style></head>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{margin:0; background: #2d1b0d; font-family:sans-serif;}}
+            #hatter {{position:fixed; width:100%; height:100%; object-fit:cover; z-index:-1;}}
+            #karakter-kep {{position:absolute; bottom:90px; left:15%; width:70%; pointer-events:none;}}
+            #fiok {{position:absolute; bottom:0; width:100%; height:90px; background:#5d4037; color:white; display:flex; justify-content:center; align-items:center; gap:10px;}}
+        </style>
+    </head>
     <body>
-        <video autoplay muted loop playsinline id="hatter-video"><source src="/static/hatter_1.mp4" type="video/mp4"></video>
+        <img id="hatter" src="{{GITHUB_BASE}}kukcko_ures.jpg">
+        <img id="karakter-kep" src="" style="display:none;">
+        
         <div id="fiok">
-            <select id="karakter" onchange="videoValt()">
+            <select id="karakter" onchange="frissitKarakter()">
                 <option value="moha-anyo">Moha Anyó</option>
                 <option value="kereg-apo">Kéreg Apó</option>
                 <option value="szelvész-mano">Szélvész Manó</option>
-                <option value="pille-tunder">Pille Tündér</option>
+                <option value="pille-mano">Pille Manó</option>
                 <option value="erdesz-professzor">Erdész Professzor</option>
             </select>
             <select id="korosztaly">
@@ -50,16 +63,22 @@ async def fooldal():
         </div>
         <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
         <script>
-            function videoValt(){document.getElementById('hatter-video').src="/static/"+document.getElementById('karakter').value+".mp4";}
-            async function upload(input){
+            function frissitKarakter() {{
+                const k = document.getElementById('karakter').value;
+                const kep = document.getElementById('karakter-kep');
+                const fajlnev = "karakter_" + k.replace(/-/g, '_') + "_asztal.jpg";
+                kep.src = "{GITHUB_BASE}" + fajlnev;
+                kep.style.display = 'block';
+            }}
+            async function upload(input) {{
                 const fd=new FormData(); fd.append('file',input.files[0]); fd.append('karakter',document.getElementById('karakter').value); fd.append('korosztaly',document.getElementById('korosztaly').value);
-                const res=await fetch('/api/keregapo',{method:'POST',body:fd});
-                if(res.ok){const blob=await res.blob(); new Audio(URL.createObjectURL(blob)).play();}
-            }
+                const res=await fetch('/api/keregapo',{{method:'POST',body:fd}});
+                if(res.ok){{const blob=await res.blob(); new Audio(URL.createObjectURL(blob)).play();}}
+            }}
         </script>
     </body>
     </html>
-    """
+    """.replace("{GITHUB_BASE}", GITHUB_BASE)
 
 @app.post("/api/keregapo")
 async def keregapo_mesel(file: UploadFile = File(...), karakter: str = Form(...), korosztaly: str = Form(...)):
