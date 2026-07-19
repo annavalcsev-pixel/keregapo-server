@@ -13,7 +13,7 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 client = genai.Client()
 
-GITHUB_BASE = "https://github.com/annavalcsev-pixel/keregapo-server/raw/main/static/"
+GITHUB_BASE = "https://raw.githubusercontent.com/annavalcsev-pixel/keregapo-server/main/static/"
 
 # Karakterek hangjának finomhangolása
 # rate: beszédtempó, pitch: hangmagasság
