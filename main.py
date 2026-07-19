@@ -54,20 +54,18 @@ async def fooldal():
         </div>
 
         <div id="kaland" class="view">
-            <button class="nagyito-gomb" onclick="document.getElementById('cam').click()">
+            <button class="nagyito-gomb" onclick="document.getElementById('cameraInput').click()">
                 <img src="{GITHUB_BASE}nagyito.png" class="ikon">
             </button>
-            <button class="konyv-gomb" onclick="document.getElementById('galeria').classList.add('active')">
+            <button class="konyv-gomb" onclick="document.getElementById('galleryInput').click()">
                 <img src="{GITHUB_BASE}konyv.png" class="ikon">
             </button>
         </div>
 
-        <div id="galeria" class="view" style="background:rgba(0,0,0,0.9); z-index:20; color:white; padding:20px;">
-            <h2>Mesetár</h2>
-            <button onclick="document.getElementById('galeria').classList.remove('active')">Bezár</button>
-        </div>
-
-        <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
+        <!-- Kamera input -->
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
+        <!-- Galéria input -->
+        <input type="file" id="galleryInput" accept="image/*" style="display:none" onchange="upload(this)">
 
         <script>
             let state = {{kor: '', karakter: ''}};
@@ -83,9 +81,14 @@ async def fooldal():
                 }}
             }}
             async function upload(input) {{
-                const fd = new FormData(); fd.append('file', input.files[0]); fd.append('karakter', state.karakter);
+                const fd = new FormData(); 
+                fd.append('file', input.files[0]); 
+                fd.append('karakter', state.karakter);
                 const res = await fetch('/api/keregapo', {{method: 'POST', body: fd}});
-                if(res.ok) {{ const blob = await res.blob(); new Audio(URL.createObjectURL(blob)).play(); }}
+                if(res.ok) {{ 
+                    const blob = await res.blob(); 
+                    new Audio(URL.createObjectURL(blob)).play(); 
+                }}
             }}
         </script>
     </body>
