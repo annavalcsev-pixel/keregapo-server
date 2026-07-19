@@ -1,14 +1,12 @@
 import io
-import os
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import Response, HTMLResponse
 from PIL import Image
 from google import genai
-from google.genai import types
 import edge_tts
-from database import engine, Base, SessionLocal
 import models
+from database import engine
 
 models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
@@ -24,38 +22,51 @@ async def fooldal():
     <html lang="hu">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             body {{margin:0; background:#2d1b0d; font-family:sans-serif; overflow:hidden;}}
             .view {{position:absolute; top:0; left:0; width:100%; height:100%; display:none;}}
             .active {{display:block;}}
             img {{width:100%; height:100%; object-fit:cover;}}
-            .tabla-gomb {{position:absolute; width:200px; height:40px; opacity:0; cursor:pointer;}}
+            
+            /* Gombok a kapun és karakterválasztón */
+            .gomb-overlay {{position:absolute; width:200px; height:40px; opacity:0; cursor:pointer;}}
             .karakter-gomb {{position:absolute; width:15%; height:30%; opacity:0; cursor:pointer;}}
-            #ikon-tarolo {{position:absolute; bottom:20px; width:100%; text-align:center;}}
-            .ikon {{width:80px; height:80px; margin:0 20px; cursor:pointer;}}
+            
+            /* Kaland nézet ikonjai */
+            .nagyito-gomb {{position:absolute; top:-20px; left:15%; width:150px; background:none; border:none; cursor:pointer; z-index:10; transition: transform 0.2s;}}
+            .konyv-gomb {{position:absolute; bottom:5%; right:10%; width:120px; background:none; border:none; cursor:pointer; z-index:10; transition: transform 0.2s;}}
+            .ikon-kep {{width:100%; height:auto;}}
+            .nagyito-gomb:hover, .konyv-gomb:hover {{transform: scale(1.1);}}
         </style>
     </head>
     <body>
+        <!-- 1. Kapu nézet -->
         <div id="kapu" class="view active">
             <img src="{GITHUB_BASE}bejarati_kapu.jpg">
-            <button class="tabla-gomb" style="top:58%; left:10%;" onclick="valaszt('kor', 'aprok')"></button>
-            <button class="tabla-gomb" style="top:65%; left:10%;" onclick="valaszt('kor', 'felfedezok')"></button>
-            <button class="tabla-gomb" style="top:72%; left:10%;" onclick="valaszt('kor', 'termeszetbuvarok')"></button>
+            <button class="gomb-overlay" style="top:58%; left:10%;" onclick="valaszt('kor', 'aprok')"></button>
+            <button class="gomb-overlay" style="top:65%; left:10%;" onclick="valaszt('kor', 'felfedezok')"></button>
+            <button class="gomb-overlay" style="top:72%; left:10%;" onclick="valaszt('kor', 'termeszetbuvarok')"></button>
         </div>
 
+        <!-- 2. Karakter választó -->
         <div id="karakterek" class="view">
             <img src="{GITHUB_BASE}minden_karakter_udvozlet.jpg">
-            <!-- Koordináták beállítása a csoportképen lévő karakterekre -->
-            <button class="karakter-gomb" style="top:50%; left:20%;" onclick="valaszt('karakter', 'moha-anyo')"></button>
-            <button class="karakter-gomb" style="top:50%; left:40%;" onclick="valaszt('karakter', 'kereg-apo')"></button>
+            <button class="karakter-gomb" style="top:50%; left:15%;" onclick="valaszt('karakter', 'moha-anyo')"></button>
+            <button class="karakter-gomb" style="top:50%; left:35%;" onclick="valaszt('karakter', 'pille-mano')"></button>
+            <button class="karakter-gomb" style="top:45%; left:55%;" onclick="valaszt('karakter', 'kereg-apo')"></button>
+            <button class="karakter-gomb" style="top:45%; left:75%;" onclick="valaszt('karakter', 'szelvész-mano')"></button>
         </div>
 
+        <!-- 3. Kaland nézet -->
         <div id="kaland" class="view">
             <img id="asztal-kep" src="">
-            <div id="ikon-tarolo">
-                <button class="ikon" onclick="document.getElementById('cam').click()">📷</button>
-                <button class="ikon" onclick="alert('Galéria megnyitva')">📖</button>
-            </div>
+            <button class="nagyito-gomb" onclick="document.getElementById('cam').click()">
+                <img src="{GITHUB_BASE}nagyito.jpg" class="ikon-kep">
+            </button>
+            <button class="konyv-gomb" onclick="alert('Galéria megnyitva')">
+                <img src="{GITHUB_BASE}konyv.jpg" class="ikon-kep">
+            </button>
         </div>
 
         <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
@@ -87,7 +98,7 @@ async def keregapo_mesel(file: UploadFile = File(...), karakter: str = Form(...)
     raw_image = Image.open(io.BytesIO(contents)).convert("RGB")
     response = client.models.generate_content(
         model='gemini-1.5-flash', 
-        contents=[raw_image, "Nevezd meg a képen látható dolgot, és mesélj róla."],
+        contents=[raw_image, "Nevezd meg a képen látható dolgot, és mesélj róla."]
     )
     communicate = edge_tts.Communicate(response.text, "hu-HU-NoemiNeural")
     audio_io = io.BytesIO()
