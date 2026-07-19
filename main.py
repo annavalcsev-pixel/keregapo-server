@@ -36,7 +36,7 @@ async def fooldal():
             .active {{display:block;}}
             .gomb-overlay {{position:absolute; width:200px; height:40px; opacity:0; cursor:pointer;}}
             .karakter-gomb {{position:absolute; width:15%; height:30%; opacity:0; cursor:pointer;}}
-            .nagyito-gomb {{position:absolute; top:5%; left:10%; width:120px; background:none; border:none; cursor:pointer; z-index:10;}}
+            .nagyito-gomb {{position:absolute; top:5%; left:5%; width:120px; background:none; border:none; cursor:pointer; z-index:10;}}
             .konyv-gomb {{position:absolute; bottom:5%; right:5%; width:100px; background:none; border:none; cursor:pointer; z-index:10;}}
             .ikon {{width:100%; height:auto;}}
         </style>
@@ -57,9 +57,14 @@ async def fooldal():
             <button class="nagyito-gomb" onclick="document.getElementById('cam').click()">
                 <img src="{GITHUB_BASE}nagyito.png" class="ikon">
             </button>
-            <button class="konyv-gomb" onclick="alert('Galéria megnyitva')">
+            <button class="konyv-gomb" onclick="document.getElementById('galeria').classList.add('active')">
                 <img src="{GITHUB_BASE}konyv.png" class="ikon">
             </button>
+        </div>
+
+        <div id="galeria" class="view" style="background:rgba(0,0,0,0.9); z-index:20; color:white; padding:20px;">
+            <h2>Mesetár</h2>
+            <button onclick="document.getElementById('galeria').classList.remove('active')">Bezár</button>
         </div>
 
         <input type="file" id="cam" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
