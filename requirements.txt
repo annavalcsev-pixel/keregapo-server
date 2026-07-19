@@ -1,6 +1,8 @@
 fastapi
 uvicorn
 google-genai
-pillow
-edge-tts
-python-multipart
+párna
+él-tts
+python-többrészes
+flask-sqlalchemy
+psycopg2-binary
