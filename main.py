@@ -8,7 +8,7 @@ from google.genai import types
 import edge_tts
 
 app = FastAPI()
-# Statikus fájlok (videó) kiszolgálása
+# A videófájl kiszolgálása a szerver gyökérkönyvtárából
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 client = genai.Client()
@@ -62,10 +62,19 @@ async def fooldal():
                 const fd = new FormData();
                 fd.append('file', input.files[0]);
                 fd.append('korosztaly', document.getElementById('korosztaly').value);
-                const res = await fetch('/api/keregapo', { method: 'POST', body: fd });
-                if(res.ok) {
-                    const audio = new Audio(URL.createObjectURL(await res.blob()));
-                    audio.play();
+                
+                try {
+                    const res = await fetch('/api/keregapo', { method: 'POST', body: fd });
+                    if(res.ok) {
+                        const blob = await res.blob();
+                        const audio = new Audio(URL.createObjectURL(blob));
+                        audio.play().catch(e => {
+                            console.log("Lejátszás blokkolva:", e);
+                            alert("Kérlek, érintsd meg a képernyőt a mese indításához!");
+                        });
+                    }
+                } catch (err) {
+                    console.error("Hiba:", err);
                 }
                 document.getElementById('loading').style.display = 'none';
             }
