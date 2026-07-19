@@ -1,4 +1,5 @@
 import io
+import os
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import Response, HTMLResponse
@@ -6,9 +7,29 @@ from PIL import Image
 from google import genai
 from google.genai import types
 import edge_tts
+from sqlalchemy import create_engine, Column, Integer, String, Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+# Adatbázis beállítása
+DATABASE_URL = os.environ.get('DATABASE_URL')
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# Adatbázis tábla definíciója
+class Discovery(Base):
+    __tablename__ = "discoveries"
+    id = Column(Integer, primary_key=True, index=True)
+    character = Column(String(50))
+    age_group = Column(String(20))
+    found_item = Column(String(100))
+    note = Column(Text)
+
+# Tábla létrehozása
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-# A videófájl kiszolgálása a szerver gyökérkönyvtárából
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 client = genai.Client()
@@ -62,20 +83,14 @@ async def fooldal():
                 const fd = new FormData();
                 fd.append('file', input.files[0]);
                 fd.append('korosztaly', document.getElementById('korosztaly').value);
-                
                 try {
                     const res = await fetch('/api/keregapo', { method: 'POST', body: fd });
                     if(res.ok) {
                         const blob = await res.blob();
                         const audio = new Audio(URL.createObjectURL(blob));
-                        audio.play().catch(e => {
-                            console.log("Lejátszás blokkolva:", e);
-                            alert("Kérlek, érintsd meg a képernyőt a mese indításához!");
-                        });
+                        audio.play().catch(e => { alert("Kérlek, érintsd meg a képernyőt a mese indításához!"); });
                     }
-                } catch (err) {
-                    console.error("Hiba:", err);
-                }
+                } catch (err) { console.error("Hiba:", err); }
                 document.getElementById('loading').style.display = 'none';
             }
         </script>
@@ -91,9 +106,23 @@ async def keregapo_mesel(file: UploadFile = File(...), korosztaly: str = Form(..
     
     response = client.models.generate_content(
         model='gemini-3.1-flash-lite', 
-        contents=[raw_image, "Mesélj a képről."], 
+        contents=[raw_image, "Nevezd meg röviden a képen látható dolgot, majd mesélj róla."], 
         config=types.GenerateContentConfig(system_instruction=instrukcio)
     )
+    
+    # Adatbázisba mentés
+    db = SessionLocal()
+    try:
+        new_discovery = Discovery(
+            character="Moha Anyó",
+            age_group=korosztaly,
+            found_item="Feldolgozva",
+            note=response.text
+        )
+        db.add(new_discovery)
+        db.commit()
+    finally:
+        db.close()
     
     communicate = edge_tts.Communicate(response.text, "hu-HU-NoemiNeural")
     audio_io = io.BytesIO()
