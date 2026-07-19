@@ -15,6 +15,15 @@ client = genai.Client()
 
 GITHUB_BASE = "https://github.com/annavalcsev-pixel/keregapo-server/raw/main/static/"
 
+# Karakterek hangjának finomhangolása
+# rate: beszédtempó, pitch: hangmagasság
+KARAKTER_HANGOK = {
+    "kereg-apo": {"voice": "hu-HU-TamasNeural", "rate": "-15%", "pitch": "-5Hz"},
+    "moha-anyo": {"voice": "hu-HU-NoemiNeural", "rate": "-10%", "pitch": "-2Hz"},
+    "szelvesz-mano": {"voice": "hu-HU-TamasNeural", "rate": "+10%", "pitch": "+5Hz"},
+    "pille-mano": {"voice": "hu-HU-NoemiNeural", "rate": "+15%", "pitch": "+8Hz"}
+}
+
 @app.get("/", response_class=HTMLResponse)
 async def fooldal():
     return f"""
@@ -28,12 +37,8 @@ async def fooldal():
             .view {{position:absolute; top:0; left:0; width:100%; height:100%; display:none;}}
             .active {{display:block;}}
             img {{width:100%; height:100%; object-fit:cover;}}
-            
-            /* Gombok a kapun és karakterválasztón */
             .gomb-overlay {{position:absolute; width:200px; height:40px; opacity:0; cursor:pointer;}}
             .karakter-gomb {{position:absolute; width:15%; height:30%; opacity:0; cursor:pointer;}}
-            
-            /* Kaland nézet ikonjai */
             .nagyito-gomb {{position:absolute; top:-20px; left:15%; width:150px; background:none; border:none; cursor:pointer; z-index:10; transition: transform 0.2s;}}
             .konyv-gomb {{position:absolute; bottom:5%; right:10%; width:120px; background:none; border:none; cursor:pointer; z-index:10; transition: transform 0.2s;}}
             .ikon-kep {{width:100%; height:auto;}}
@@ -41,7 +46,6 @@ async def fooldal():
         </style>
     </head>
     <body>
-        <!-- 1. Kapu nézet -->
         <div id="kapu" class="view active">
             <img src="{GITHUB_BASE}bejarati_kapu.jpg">
             <button class="gomb-overlay" style="top:58%; left:10%;" onclick="valaszt('kor', 'aprok')"></button>
@@ -49,16 +53,14 @@ async def fooldal():
             <button class="gomb-overlay" style="top:72%; left:10%;" onclick="valaszt('kor', 'termeszetbuvarok')"></button>
         </div>
 
-        <!-- 2. Karakter választó -->
         <div id="karakterek" class="view">
             <img src="{GITHUB_BASE}minden_karakter_udvozlet.jpg">
             <button class="karakter-gomb" style="top:50%; left:15%;" onclick="valaszt('karakter', 'moha-anyo')"></button>
             <button class="karakter-gomb" style="top:50%; left:35%;" onclick="valaszt('karakter', 'pille-mano')"></button>
             <button class="karakter-gomb" style="top:45%; left:55%;" onclick="valaszt('karakter', 'kereg-apo')"></button>
-            <button class="karakter-gomb" style="top:45%; left:75%;" onclick="valaszt('karakter', 'szelvész-mano')"></button>
+            <button class="karakter-gomb" style="top:45%; left:75%;" onclick="valaszt('karakter', 'szelvesz-mano')"></button>
         </div>
 
-        <!-- 3. Kaland nézet -->
         <div id="kaland" class="view">
             <img id="asztal-kep" src="">
             <button class="nagyito-gomb" onclick="document.getElementById('cam').click()">
@@ -96,11 +98,22 @@ async def fooldal():
 async def keregapo_mesel(file: UploadFile = File(...), karakter: str = Form(...)):
     contents = await file.read()
     raw_image = Image.open(io.BytesIO(contents)).convert("RGB")
+    
+    # Karakter-specifikus instrukció a Gemini-nek
+    stilus = "bölcs, öreg manó, lassú, megfontolt stílusban" if karakter == "kereg-apo" else \
+             "kedves, gondoskodó anyóka, meleg hangvétellel" if karakter == "moha-anyo" else \
+             "fiatalos, pattogós, lelkes manó" if karakter == "szelvesz-mano" else \
+             "csilingelő hangú, vidám, fiatal tündér"
+             
     response = client.models.generate_content(
         model='gemini-1.5-flash', 
-        contents=[raw_image, "Nevezd meg a képen látható dolgot, és mesélj róla."]
+        contents=[raw_image, f"Mesélj a képen látható dologról mint {stilus}. Használj sok vesszőt a tagolt beszédért."]
     )
-    communicate = edge_tts.Communicate(response.text, "hu-HU-NoemiNeural")
+    
+    # Hang beállítások alkalmazása
+    h = KARAKTER_HANGOK.get(karakter, {"voice": "hu-HU-NoemiNeural", "rate": "+0%", "pitch": "+0Hz"})
+    communicate = edge_tts.Communicate(response.text, h["voice"], rate=h["rate"], pitch=h["pitch"])
+    
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
         if chunk["type"] == "audio": audio_io.write(chunk["data"])
