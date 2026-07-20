@@ -5,90 +5,43 @@ from fastapi.responses import Response, HTMLResponse
 from PIL import Image
 from google import genai
 import edge_tts
-import models
-from database import engine
 
-models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="static"), name="static")
 client = genai.Client()
 
+# Ezt a linket ellenőrizd: pontosan ez a repo neve?
 GITHUB_BASE = "https://raw.githubusercontent.com/annavalcsev-pixel/keregapo-server/main/static/"
-
-KARAKTER_HANGOK = {
-    "kereg-apo": {"voice": "hu-HU-TamasNeural", "rate": "-15%", "pitch": "-5Hz"},
-    "moha-anyo": {"voice": "hu-HU-NoemiNeural", "rate": "-10%", "pitch": "-2Hz"},
-    "szelvesz-mano": {"voice": "hu-HU-TamasNeural", "rate": "+10%", "pitch": "+5Hz"},
-    "pille-mano": {"voice": "hu-HU-NoemiNeural", "rate": "+15%", "pitch": "+8Hz"}
-}
 
 @app.get("/", response_class=HTMLResponse)
 async def fooldal():
     return f"""
     <!DOCTYPE html>
-    <html lang="hu">
+    <html>
     <head>
-        <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            body {{margin:0; background:#2d1b0d; font-family:sans-serif; overflow:hidden;}}
-            .view {{position:absolute; top:0; left:0; width:100%; height:100%; display:none; background-size:cover; background-position:center;}}
+            body {{margin:0; background:#2d1b0d; overflow:hidden;}}
+            .view {{position:absolute; width:100%; height:100%; display:none; background-size:cover;}}
             .active {{display:block;}}
-            .gomb-overlay {{position:absolute; width:200px; height:40px; opacity:0; cursor:pointer;}}
-            .karakter-gomb {{position:absolute; width:15%; height:30%; opacity:0; cursor:pointer;}}
-            .nagyito-gomb {{position:absolute; top:5%; left:5%; width:120px; background:none; border:none; cursor:pointer; z-index:10;}}
-            .konyv-gomb {{position:absolute; bottom:5%; right:5%; width:100px; background:none; border:none; cursor:pointer; z-index:10;}}
-            .ikon {{width:100%; height:auto;}}
+            .gomb {{position:absolute; cursor:pointer;}}
         </style>
     </head>
     <body>
         <div id="kapu" class="view active" style="background-image:url('{GITHUB_BASE}bejarati_kapu.jpg')">
-            <button class="gomb-overlay" style="top:58%; left:10%;" onclick="valaszt('kor', 'aprok')"></button>
+            <button class="gomb" style="top:50%; left:20%; width:50%; height:20%; opacity:0" onclick="valaszt('karakter', 'kereg-apo')">Kezdés</button>
         </div>
-
-        <div id="karakterek" class="view" style="background-image:url('{GITHUB_BASE}minden_karakter_udvozlet.jpg')">
-            <button class="karakter-gomb" style="top:50%; left:15%;" onclick="valaszt('karakter', 'moha-anyo')"></button>
-            <button class="karakter-gomb" style="top:50%; left:35%;" onclick="valaszt('karakter', 'pille-mano')"></button>
-            <button class="karakter-gomb" style="top:45%; left:55%;" onclick="valaszt('karakter', 'kereg-apo')"></button>
-            <button class="karakter-gomb" style="top:45%; left:75%;" onclick="valaszt('karakter', 'szelvesz-mano')"></button>
-        </div>
-
         <div id="kaland" class="view">
-            <button class="nagyito-gomb" onclick="document.getElementById('cameraInput').click()">
-                <img src="{GITHUB_BASE}nagyito.png" class="ikon">
-            </button>
-            <button class="konyv-gomb" onclick="document.getElementById('galleryInput').click()">
-                <img src="{GITHUB_BASE}konyv.png" class="ikon">
-            </button>
+            <button class="gomb" style="top:10%; left:10%; width:30%;" onclick="document.getElementById('input').click()">Nagyító</button>
+            <input type="file" id="input" style="display:none" onchange="upload(this)">
         </div>
-
-        <!-- Kamera input -->
-        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
-        <!-- Galéria input -->
-        <input type="file" id="galleryInput" accept="image/*" style="display:none" onchange="upload(this)">
-
         <script>
-            let state = {{kor: '', karakter: ''}};
-            function valaszt(tipus, ertek) {{
-                state[tipus] = ertek;
-                if(tipus === 'kor') {{ document.getElementById('kapu').classList.remove('active'); document.getElementById('karakterek').classList.add('active'); }}
-                if(tipus === 'karakter') {{ 
-                    let url = "{GITHUB_BASE}karakter_" + ertek.replace(/-/g, '_') + "_asztal.png";
-                    let kaland = document.getElementById('kaland');
-                    kaland.style.backgroundImage = "url('" + url + "')";
-                    document.getElementById('karakterek').classList.remove('active'); 
-                    kaland.classList.add('active'); 
-                }}
-            }}
-            async function upload(input) {{
-                const fd = new FormData(); 
-                fd.append('file', input.files[0]); 
-                fd.append('karakter', state.karakter);
-                const res = await fetch('/api/keregapo', {{method: 'POST', body: fd}});
-                if(res.ok) {{ 
-                    const blob = await res.blob(); 
-                    new Audio(URL.createObjectURL(blob)).play(); 
-                }}
+            let char = 'kereg-apo';
+            function valaszt(t, v) {{ document.getElementById('kapu').classList.remove('active'); document.getElementById('kaland').classList.add('active'); }}
+            async function upload(i) {{
+                const fd = new FormData(); fd.append('file', i.files[0]); fd.append('karakter', char);
+                const r = await fetch('/api/keregapo', {{method: 'POST', body: fd}});
+                if(r.ok) {{ const b = await r.blob(); new Audio(URL.createObjectURL(b)).play(); }}
+                else {{ alert('Hiba történt a szerveren!'); }}
             }}
         </script>
     </body>
@@ -100,19 +53,12 @@ async def keregapo_mesel(file: UploadFile = File(...), karakter: str = Form(...)
     contents = await file.read()
     raw_image = Image.open(io.BytesIO(contents)).convert("RGB")
     
-    stilus = "bölcs, öreg manó, lassú, megfontolt stílusban" if karakter == "kereg-apo" else \
-             "kedves, gondoskodó anyóka, meleg hangvétellel" if karakter == "moha-anyo" else \
-             "fiatalos, pattogós, lelkes manó" if karakter == "szelvesz-mano" else \
-             "csilingelő hangú, vidám, fiatal tündér"
-             
     response = client.models.generate_content(
         model='gemini-1.5-flash', 
-        contents=[raw_image, f"Mesélj a képen látható dologról mint {stilus}. Használj sok vesszőt a tagolt beszédért."]
+        contents=[raw_image, "Írj egy rövid, 3 mondatos természetvédelmi oktató szöveget mint egy manó."]
     )
     
-    h = KARAKTER_HANGOK.get(karakter, {"voice": "hu-HU-NoemiNeural", "rate": "+0%", "pitch": "+0Hz"})
-    communicate = edge_tts.Communicate(response.text, h["voice"], rate=h["rate"], pitch=h["pitch"])
-    
+    communicate = edge_tts.Communicate(response.text, "hu-HU-TamasNeural")
     audio_io = io.BytesIO()
     async for chunk in communicate.stream():
         if chunk["type"] == "audio": audio_io.write(chunk["data"])
