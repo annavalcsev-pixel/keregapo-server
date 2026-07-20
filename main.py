@@ -49,7 +49,7 @@ async def meselj(file: UploadFile = File(...)):
         
         # Ha a gemini-1.5-flash nem működik, írd át a modell nevét a korábban működőre!
         res = client.models.generate_content(
-            model='gemini-3.5-flash', 
+            model='gemini-3.1-flash-lite', 
             contents=[img, "Légy egy természetvédő manó. Mondj egy rövid, 2 mondatos, érdekes tanítást a képen látható dologról, amivel a gyerekek tanulhatnak és tisztelhetik a természetet."]
         )
         
