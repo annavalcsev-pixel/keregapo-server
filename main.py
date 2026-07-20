@@ -18,25 +18,72 @@ KARAKTEREK = {
     "Professzor": "Kívülálló, tárgyilagos, pontos, aki a dolgok tudományos hátterét is megosztja."
 }
 
+@app.get("/", response_class=HTMLResponse)
+async def fooldal():
+    return """
+    <html>
+    <body style="background:#2d1b0d; color:#e0c9a6; font-family:sans-serif; text-align:center; padding:20px;">
+        <h1>Természetbúvár Manó</h1>
+        <p>Válaszd ki, ki kísérjen és kik vagytok!</p>
+        
+        <select id="kor" style="padding:10px; font-size:16px;">
+            <option value="Aprókák (2-5 év)">Aprókák (2-5 év)</option>
+            <option value="Felfedezők (6-11)">Felfedezők (6-11)</option>
+            <option value="Természetbúvárok (12-15)">Természetbúvárok (12-15)</option>
+            <option value="Örökifjú (szülő)">Örökifjú (szülő)</option>
+        </select>
+        
+        <select id="karakter" style="padding:10px; font-size:16px;">
+            <option value="Kéreg apó">Kéreg apó</option>
+            <option value="Moha anyó">Moha anyó</option>
+            <option value="Szélvész manó">Szélvész manó</option>
+            <option value="Pille manó">Pille manó</option>
+            <option value="Professzor">Professzor</option>
+        </select>
+        
+        <br><br>
+        <button onclick="document.getElementById('file').click()" style="padding:20px 40px; font-size:20px; background:#4CAF50; color:white; border:none; border-radius:10px; cursor:pointer;">FOTÓZÁS</button>
+        <input type="file" id="file" accept="image/*" capture="environment" style="display:none" onchange="upload(this)">
+        
+        <script>
+            async function upload(i) {
+                const fd = new FormData();
+                fd.append('file', i.files[0]);
+                fd.append('kor', document.getElementById('kor').value);
+                fd.append('karakter', document.getElementById('karakter').value);
+                alert('Manó vizsgálja a kincset...');
+                const r = await fetch('/api/meselj', {method: 'POST', body: fd});
+                if(r.ok) {
+                    const b = await r.blob();
+                    new Audio(URL.createObjectURL(b)).play();
+                } else {
+                    alert('Hiba történt!');
+                }
+            }
+        </script>
+    </body>
+    </html>
+    """
+
 @app.post("/api/meselj")
 async def meselj(file: UploadFile = File(...), kor: str = Form(...), karakter: str = Form(...)):
     try:
         contents = await file.read()
         img = Image.open(io.BytesIO(contents)).convert("RGB")
         
-        stilus = KARAKTEREK.get(karakter, "Barátságos.")
+        # Szigorú karakter-meghatározás
+        stilus = KARAKTEREK.get(karakter, "Segítőkész természetbúvár.")
         
-        # A promptot úgy írtam át, hogy ne kérjen sorszámozást
+        # A prompt most már expliciten elvárja a szerep betartását és a számozás elhagyását
         prompt = f"""
-        Te {karakter} vagy. Tegezz mindenkit, legyél barátságos és közvetlen.
-        A képen látható dologról mesélj egy {kor} korosztályúnak.
+        TE KIZÁRÓLAG EZ A KARAKTER VAGY: {karakter}.
+        A stílusod: {stilus}
         
-        Így építsd fel a mondandódat (ne használj számozást, folyamatos szöveget írj!):
-        - Kezd a dolog megnevezésével a karaktered stílusában.
-        - Folytasd egy érdekes, trükkös összefüggéssel, ami a természet mélyebb működésére világít rá.
-        - Zárd a mondandódat egy {kor} korosztályhoz illő, aktív feladattal.
-        
-        Stílusod leírása: {stilus}
+        A feladatod:
+        1. Nézd meg a képet, és tegező stílusban, folyamatos szövegként mesélj róla.
+        2. SEMMIKÉPP NE HASZNÁLJ SZÁMOZÁST (pl. 1, 2, 3)!
+        3. A gyerek/felnőtt korosztálya: {kor}.
+        4. Kezd a dolog megnevezésével, majd fűzz hozzá egy trükkös természeti összefüggést, végül adj egy korosztálynak megfelelő, aktív feladatot.
         """
         
         res = client.models.generate_content(model='gemini-3.1-flash-lite', contents=[img, prompt])
